@@ -1,6 +1,7 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { ServiceStatus, SystemCardData } from "../data/types";
-import { IcCloud, IcDomain, IcFirebase, IcGithub, IcRocket, IcSave, IcServer } from "./icons";
+import { useSystemsCtx } from "../context/SystemsContext";
+import { IcCloud, IcDomain, IcEdit, IcFirebase, IcGithub, IcMore, IcRocket, IcSave, IcServer, IcTrash } from "./icons";
 
 const money = (n?: number) => (n == null ? "—" : "$" + n.toLocaleString("es-AR"));
 
@@ -27,6 +28,25 @@ function InfraItem({ label, status, icon: Icon }: { label: string; status: Servi
 
 export default function SystemCard({ sys }: { sys: SystemCardData }) {
   const style = { "--acc": sys.accent, "--acc2": sys.accent2 } as CSSProperties;
+  const { openEdit, removeSystem } = useSystemsCtx();
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const onDoc = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menu]);
+
+  const handleDelete = async () => {
+    setMenu(false);
+    if (confirm(`¿Eliminar "${sys.name}" del panel?`)) {
+      await removeSystem(sys.id);
+    }
+  };
 
   return (
     <article className="syscard" style={style}>
@@ -42,6 +62,26 @@ export default function SystemCard({ sys }: { sys: SystemCardData }) {
             <span className="led ok" />
             Activo
           </span>
+          <div className="card-menu" ref={menuRef}>
+            <button className="card-menu-btn" onClick={() => setMenu((v) => !v)} title="Opciones" aria-label="Opciones">
+              <IcMore width={17} height={17} />
+            </button>
+            {menu && (
+              <div className="card-dropdown">
+                <button
+                  onClick={() => {
+                    setMenu(false);
+                    openEdit(sys);
+                  }}
+                >
+                  <IcEdit width={15} height={15} /> Editar
+                </button>
+                <button className="danger" onClick={handleDelete}>
+                  <IcTrash width={15} height={15} /> Eliminar
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="infra">

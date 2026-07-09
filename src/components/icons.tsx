@@ -176,6 +176,32 @@ export const IcLogout = (p: P) => (
   </svg>
 );
 
+export const IcMore = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="5" r="1.4" />
+    <circle cx="12" cy="12" r="1.4" />
+    <circle cx="12" cy="19" r="1.4" />
+  </svg>
+);
+export const IcEdit = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" />
+    <path d="M13.5 6.5l3 3" />
+  </svg>
+);
+export const IcTrash = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);
+export const IcDownload = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 3v12M8 11l4 4 4-4" />
+    <path d="M4 19h16" />
+  </svg>
+);
+
 // Brand marks (simplified) for quick links
 export const IcGithub = (p: P) => (
   <svg {...base({ ...p, strokeWidth: 0, fill: "currentColor" })}>

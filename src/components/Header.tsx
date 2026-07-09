@@ -1,8 +1,10 @@
 import { useTheme } from "../context/ThemeContext";
+import { useSystemsCtx } from "../context/SystemsContext";
 import { IcBell, IcMoon, IcPlus, IcSearch, IcSun } from "./icons";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
+  const { openAdd } = useSystemsCtx();
 
   return (
     <header className="header">
@@ -43,7 +45,7 @@ export default function Header() {
           <IcBell width={18} height={18} />
         </button>
 
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={openAdd}>
           <IcPlus width={17} height={17} />
           Agregar sistema
         </button>
