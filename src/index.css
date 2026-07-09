@@ -148,12 +148,15 @@ a {
 }
 
 .content {
-  display: grid;
-  grid-template-columns: 1fr var(--rightpanel-w);
-  gap: 22px;
   padding: 22px 26px 30px;
   overflow-y: auto;
   min-height: 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr var(--rightpanel-w);
+  gap: 22px;
 }
 
 .center-col {
@@ -1387,6 +1390,160 @@ a {
 }
 
 /* =========================================================================
+   Views (páginas del sidebar)
+   ========================================================================= */
+
+.page-head {
+  margin-bottom: 20px;
+}
+.page-head h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page-head p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.view-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.big-total {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+}
+.big-total .bt-label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.big-total .bt-value {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+.big-total.paid .bt-value {
+  color: var(--ok);
+}
+.big-total.pending .bt-value {
+  color: var(--warn);
+}
+
+/* Data table */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.data-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+.data-table tbody tr {
+  transition: background 0.12s;
+}
+.data-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+.data-table .cell-strong {
+  font-weight: 600;
+}
+.data-table .cell-money {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cell-client {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cell-glyph {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Placeholder view */
+.placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  text-align: center;
+}
+.placeholder-inner {
+  max-width: 380px;
+}
+.placeholder-ico {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  background: var(--brand-weak);
+  color: var(--brand-text);
+}
+.placeholder h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.placeholder p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.placeholder .pill {
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .view-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================================
    Utilities / responsiveness
    ========================================================================= */
 
@@ -1395,7 +1552,7 @@ a {
 }
 
 @media (max-width: 1180px) {
-  .content {
+  .dashboard-grid {
     grid-template-columns: 1fr;
   }
   .right-panel {

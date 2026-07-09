@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useNav, type View } from "../context/NavContext";
 import {
   IcBilling,
   IcBolt,
@@ -16,7 +16,7 @@ import {
 } from "./icons";
 
 interface NavEntry {
-  key: string;
+  key: View;
   label: string;
   icon: (p: { width?: number; height?: number }) => JSX.Element;
   badge?: string;
@@ -37,7 +37,7 @@ const NAV: NavEntry[] = [
 ];
 
 export default function Sidebar() {
-  const [active, setActive] = useState("inicio");
+  const { view: active, setView } = useNav();
   const { user, logout } = useAuth();
 
   const name = user?.displayName || "Gastón M.";
@@ -64,11 +64,11 @@ export default function Sidebar() {
       <nav className="nav-section">
         <div className="nav-label">General</div>
         {NAV.slice(0, 5).map((item) => (
-          <NavButton key={item.key} item={item} active={active} onClick={setActive} />
+          <NavButton key={item.key} item={item} active={active} onClick={setView} />
         ))}
         <div className="nav-label">Trabajo</div>
         {NAV.slice(5).map((item) => (
-          <NavButton key={item.key} item={item} active={active} onClick={setActive} />
+          <NavButton key={item.key} item={item} active={active} onClick={setView} />
         ))}
       </nav>
 
@@ -93,9 +93,9 @@ function NavButton({
   active,
   onClick,
 }: {
-  item: (typeof NAV)[number];
-  active: string;
-  onClick: (k: string) => void;
+  item: NavEntry;
+  active: View;
+  onClick: (k: View) => void;
 }) {
   const Icon = item.icon;
   return (
