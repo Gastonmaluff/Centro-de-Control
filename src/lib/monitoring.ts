@@ -26,3 +26,11 @@ export async function checkUrl(url?: string): Promise<Monitoring> {
     };
   }
 }
+
+/** Pide al backend un barrido de TODOS los sistemas ("Revisar todos"). */
+export async function runMonitorAll(): Promise<number> {
+  const functions = getFunctions(app);
+  const call = httpsCallable<Record<string, never>, { checked: number }>(functions, "monitorAll");
+  const res = await call({});
+  return res.data.checked;
+}

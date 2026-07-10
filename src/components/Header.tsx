@@ -1,15 +1,30 @@
+import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus } from "../lib/status";
-import { IcBell, IcMoon, IcPlus, IcSearch, IcSun } from "./icons";
+import { runMonitorAll } from "../lib/monitoring";
+import { IcBell, IcMoon, IcPlus, IcRefresh, IcSearch, IcSun } from "./icons";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const { openAdd, systems } = useSystemsCtx();
+  const [sweeping, setSweeping] = useState(false);
 
   const operational = systems.filter((s) => computeStatus(s) === "operational").length;
   const attention = systems.filter((s) => ["warning", "down"].includes(computeStatus(s))).length;
   const openTodos = systems.reduce((a, s) => a + (s.todoStats?.open ?? 0), 0);
+
+  const sweep = async () => {
+    if (sweeping) return;
+    setSweeping(true);
+    try {
+      await runMonitorAll();
+    } catch {
+      /* silencioso: el snapshot refleja lo que sí se pudo actualizar */
+    } finally {
+      setSweeping(false);
+    }
+  };
 
   return (
     <header className="header">
@@ -46,6 +61,16 @@ export default function Header() {
             <IcMoon width={16} height={16} />
           </button>
         </div>
+
+        <button
+          className="icon-btn"
+          title="Revisar todos los sistemas"
+          aria-label="Revisar todos los sistemas"
+          onClick={sweep}
+          disabled={sweeping}
+        >
+          <IcRefresh width={17} height={17} className={sweeping ? "spin" : undefined} />
+        </button>
 
         <button className="icon-btn dot-badge" title="Notificaciones">
           <IcBell width={18} height={18} />
