@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNav, type View } from "../context/NavContext";
 import { useSystemsCtx } from "../context/SystemsContext";
@@ -10,6 +11,7 @@ import {
   IcHome,
   IcLogout,
   IcMonitor,
+  IcPlus,
   IcSessions,
   IcSettings,
   IcSystems,
@@ -28,23 +30,23 @@ const NAV: NavEntry[] = [
   { key: "inicio", label: "Inicio", icon: IcHome },
   { key: "sistemas", label: "Sistemas", icon: IcSystems },
   { key: "clientes", label: "Clientes", icon: IcClients },
-  { key: "cobros", label: "Cobros", icon: IcBilling },
+  { key: "cobros", label: "Mensualidades", icon: IcBilling },
   { key: "monitoreo", label: "Monitoreo", icon: IcMonitor },
   { key: "tareas", label: "Tareas", icon: IcTasks },
   { key: "sesiones", label: "Sesiones de trabajo", icon: IcSessions },
   { key: "costos", label: "Costos", icon: IcCosts },
   { key: "documentos", label: "Documentos", icon: IcDocs },
-  { key: "config", label: "Configuración", icon: IcSettings },
+  { key: "config", label: "Configuracion", icon: IcSettings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { view: active, setView } = useNav();
   const { user, logout } = useAuth();
   const { systems } = useSystemsCtx();
   const badges: Partial<Record<View, string>> = { sistemas: systems.length ? String(systems.length) : undefined };
   const nav = NAV.map((n) => ({ ...n, badge: badges[n.key] ?? n.badge }));
 
-  const name = user?.displayName || "Gastón M.";
+  const name = user?.displayName || "Gaston M.";
   const email = user?.email || "gaston@centrodecontrol.app";
   const initials = name
     .split(" ")
@@ -53,42 +55,62 @@ export default function Sidebar() {
     .slice(0, 2)
     .toUpperCase();
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  const navigate = (view: View) => {
+    setView(view);
+    onClose();
+  };
+
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-logo">
-          <IcBolt width={20} height={20} />
-        </div>
-        <div>
-          <div className="brand-name">Centro de Control</div>
-          <div className="brand-sub">Panel del desarrollador</div>
-        </div>
-      </div>
-
-      <nav className="nav-section">
-        <div className="nav-label">General</div>
-        {nav.slice(0, 5).map((item) => (
-          <NavButton key={item.key} item={item} active={active} onClick={setView} />
-        ))}
-        <div className="nav-label">Trabajo</div>
-        {nav.slice(5).map((item) => (
-          <NavButton key={item.key} item={item} active={active} onClick={setView} />
-        ))}
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="user-chip">
-          <div className="avatar">{initials}</div>
-          <div style={{ minWidth: 0 }}>
-            <div className="user-name">{name}</div>
-            <div className="user-mail">{email}</div>
+    <div className={`drawer-layer ${open ? "open" : ""}`} aria-hidden={!open}>
+      <button className="drawer-backdrop" aria-label="Cerrar menu" onClick={onClose} />
+      <aside className="sidebar drawer" aria-label="Menu principal">
+        <div className="brand">
+          <div className="brand-logo">
+            <IcBolt width={20} height={20} />
           </div>
-          <button className="icon-btn" style={{ marginLeft: "auto" }} title="Cerrar sesión" onClick={() => logout()}>
-            <IcLogout width={16} height={16} />
+          <div>
+            <div className="brand-name">Centro de Control</div>
+            <div className="brand-sub">Panel del desarrollador</div>
+          </div>
+          <button className="icon-btn drawer-close" title="Cerrar menu" aria-label="Cerrar menu" onClick={onClose}>
+            <IcPlus width={18} height={18} style={{ transform: "rotate(45deg)" }} />
           </button>
         </div>
-      </div>
-    </aside>
+
+        <nav className="nav-section">
+          <div className="nav-label">General</div>
+          {nav.slice(0, 5).map((item) => (
+            <NavButton key={item.key} item={item} active={active} onClick={navigate} />
+          ))}
+          <div className="nav-label">Trabajo</div>
+          {nav.slice(5).map((item) => (
+            <NavButton key={item.key} item={item} active={active} onClick={navigate} />
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="user-chip">
+            <div className="avatar">{initials}</div>
+            <div style={{ minWidth: 0 }}>
+              <div className="user-name">{name}</div>
+              <div className="user-mail">{email}</div>
+            </div>
+            <button className="icon-btn" style={{ marginLeft: "auto" }} title="Cerrar sesion" onClick={() => logout()}>
+              <IcLogout width={16} height={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -106,9 +128,7 @@ function NavButton({
     <button className={`nav-item ${active === item.key ? "active" : ""}`} onClick={() => onClick(item.key)}>
       <Icon width={18} height={18} />
       {item.label}
-      {item.badge && (
-        <span className={`nav-badge ${"alert" in item && item.alert ? "alert" : ""}`}>{item.badge}</span>
-      )}
+      {item.badge && <span className={`nav-badge ${item.alert ? "alert" : ""}`}>{item.badge}</span>}
     </button>
   );
 }

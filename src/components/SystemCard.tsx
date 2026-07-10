@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { ComponentState, System, TodoPriority } from "../data/types";
+import type { ComponentState, System } from "../data/types";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus, projectStatusInfo, statusInfo } from "../lib/status";
 import { componentStateInfo, getTechnicalComponents, monitoringModeLabel } from "../lib/technical";
@@ -20,20 +20,6 @@ import {
   IcTasks,
   IcTrash,
 } from "./icons";
-
-const priorityInfo: Record<TodoPriority, { label: string; tone: string }> = {
-  critical: { label: "Critica", tone: "down" },
-  high: { label: "Alta", tone: "warn" },
-  medium: { label: "Media", tone: "muted" },
-  low: { label: "Baja", tone: "muted" },
-};
-
-const stateIcon: Record<ComponentState, string> = {
-  ok: "●",
-  warn: "●",
-  down: "●",
-  unknown: "●",
-};
 
 export default function SystemCard({ sys }: { sys: System }) {
   const style = { "--acc": sys.accent, "--acc2": sys.accent2 } as CSSProperties;
@@ -60,6 +46,8 @@ export default function SystemCard({ sys }: { sys: System }) {
   const open = sys.todoStats?.open ?? 0;
   const components = getTechnicalComponents(sys);
   const response = components.find((c) => c.key === "application")?.responseMs ?? mon?.responseMs;
+  const techChecks = ["application", "domain", "backup"].flatMap((key) => components.find((c) => c.key === key) ?? []);
+  const lastActivity = sys.lastWorkedAt ?? deploy?.checkedAt ?? git?.date ?? mon?.checkedAt;
 
   const handleDelete = async () => {
     setMenu(false);
@@ -87,76 +75,53 @@ export default function SystemCard({ sys }: { sys: System }) {
     <article className="syscard" style={style}>
       <div className="syscard-band" />
       <div className="syscard-body">
-        <div className="syscard-head">
+        <section className="sys-identity">
           <div className="sys-glyph">{sys.glyph}</div>
           <div className="sys-title">
             <div className="sys-name">{sys.name}</div>
             <div className="sys-tag">{sys.description || projectStatusInfo[sys.projectStatus]}</div>
-          </div>
-          <span className={`status-chip ${si.tone}`}>
-            <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
-            {si.label}
-          </span>
-        </div>
-
-        <section className="card-block">
-          <div className="card-block-head">
-            <span>Estado tecnico</span>
-            <span className="monitor-mode">{reanalyzing ? "Verificando..." : monitoringModeLabel(sys)}</span>
-          </div>
-          <div className="tech-checks">
-            {components.map((check) => (
-              <TechCheck key={check.key} check={check} />
-            ))}
+            <span className={`status-chip ${si.tone}`}>
+              <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
+              {si.label}
+            </span>
           </div>
         </section>
 
-        <section className="info-grid" aria-label="Informacion secundaria">
+        <section className="sys-tech">
+          {techChecks.map((check) => (
+            <TechCheck key={check.key} check={check} />
+          ))}
+          <ModeCheck mode={mon?.mode} label={reanalyzing ? "Verificando..." : monitoringModeLabel(sys)} checkedAt={mon?.checkedAt} />
+        </section>
+
+        <section className="sys-info" aria-label="Informacion del sistema">
+          <InfoItem label="Ultima comprobacion" value={mon?.checkedAt ? dateTime(mon.checkedAt) : "Sin comprobar"} />
           <InfoItem label="Respuesta" value={response != null ? `${response} ms` : "No verificada"} />
-          <InfoItem
-            label="Commit"
-            value={git?.connected ? git.sha ?? "Conectado" : sys.links.github ? "No conectado" : "Sin GitHub"}
-            detail={git?.date ? timeAgo(git.date) : undefined}
-            code={Boolean(git?.sha)}
-          />
-          <InfoItem
-            label="Deploy"
-            value={deploy?.status ? deploy.status : "No disponible"}
-            detail={deploy?.checkedAt ? timeAgo(deploy.checkedAt) : undefined}
-            tone={deploy?.status === "failed" ? "down" : deploy?.status === "success" ? "ok" : undefined}
-          />
+          <InfoItem label="Commit" value={git?.connected ? git.sha ?? "Conectado" : sys.links.github ? "No conectado" : "Sin GitHub"} code={Boolean(git?.sha)} />
+          <InfoItem label="Deploy" value={deploy?.status ? deploy.status : "No disponible"} tone={deploy?.status === "failed" ? "down" : deploy?.status === "success" ? "ok" : undefined} />
+          <InfoItem label="Actividad" value={timeAgo(lastActivity)} />
           <button className="info-item info-button" onClick={() => openTodos(sys)}>
             <span>Pendientes</span>
             <b>{open === 0 ? "Sin pendientes" : `${open} abierto${open > 1 ? "s" : ""}`}</b>
           </button>
         </section>
 
-        {sys.todoStats?.topPriorityTitle && sys.todoStats.topPriority && (
-          <div className="sys-sub">
-            <span className={`pill ${priorityInfo[sys.todoStats.topPriority].tone === "muted" ? "" : priorityInfo[sys.todoStats.topPriority].tone}`}>
-              {priorityInfo[sys.todoStats.topPriority].label}: {sys.todoStats.topPriorityTitle}
-            </span>
-            <span className="sys-activity muted">Actividad {timeAgo(sys.lastWorkedAt ?? git?.date ?? deploy?.checkedAt)}</span>
-          </div>
-        )}
-
         {sys.type === "client" && sys.client && (
-          <div className="sys-client">
-            <span>{sys.client.name || "Cliente"}</span>
-            {sys.client.monthly != null && <span className="sys-client-amt">{money(sys.client.monthly)}/mes</span>}
-          </div>
+          <section className="sys-commerce">
+            <InfoItem label="Cliente" value={sys.client.name || "Cliente"} />
+            <InfoItem label="Mensualidad" value={money(sys.client.monthly)} />
+            <InfoItem label="Vencimiento" value={sys.client.dueDay ? `Dia ${sys.client.dueDay}` : "Sin fecha"} />
+            <InfoItem label="Pago" value={sys.client.serviceStatus === "ended" ? "Finalizado" : "Pendiente"} tone={sys.client.serviceStatus === "ended" ? undefined : "warn"} />
+          </section>
         )}
 
-        <div className="sys-footer">
-          <div className="quick-links">
-            <QLink href={link.public} title="Abrir aplicacion"><IcExternal width={16} height={16} /></QLink>
-            <QLink href={link.admin} title="Abrir panel administrativo"><IcServer width={16} height={16} /></QLink>
-            <QLink href={link.github} title="GitHub"><IcGithub width={16} height={16} /></QLink>
-            <QLink href={link.firebase} title="Firebase"><IcFirebase width={16} height={16} /></QLink>
-            <QLink href={link.cloudflare} title="Cloudflare"><IcCloud width={16} height={16} /></QLink>
-            <QLink href={link.domain} title="Dominio"><IcDomain width={16} height={16} /></QLink>
-          </div>
-
+        <section className="sys-actions" aria-label="Accesos rapidos">
+          <QLink href={link.public} title="Abrir aplicacion"><IcExternal width={16} height={16} /></QLink>
+          <QLink href={link.admin} title="Abrir panel administrativo"><IcServer width={16} height={16} /></QLink>
+          <QLink href={link.github} title="GitHub"><IcGithub width={16} height={16} /></QLink>
+          <QLink href={link.firebase} title="Firebase"><IcFirebase width={16} height={16} /></QLink>
+          <QLink href={link.cloudflare} title="Cloudflare"><IcCloud width={16} height={16} /></QLink>
+          <QLink href={link.domain} title="Dominio"><IcDomain width={16} height={16} /></QLink>
           <div className="card-menu" ref={menuRef}>
             <button className="qlink" onClick={() => setMenu((v) => !v)} title="Mas opciones" aria-label="Mas opciones">
               <IcMore width={17} height={17} />
@@ -178,7 +143,7 @@ export default function SystemCard({ sys }: { sys: System }) {
               </div>
             )}
           </div>
-        </div>
+        </section>
       </div>
     </article>
   );
@@ -191,16 +156,29 @@ function TechCheck({ check }: { check: ReturnType<typeof getTechnicalComponents>
     check.source,
     check.checkedAt ? dateTime(check.checkedAt) : null,
   ].filter(Boolean);
-  const title = `${check.label}: ${info.label}. ${check.message ?? "Sin mensaje"}. ${meta.join(" · ")}`;
+  const title = `${check.label}: ${info.label}. ${check.message ?? "Sin mensaje"}. ${meta.join(" - ")}`;
 
   return (
     <div className={`tech-check ${info.tone}`} title={title}>
-      <span className={`check-dot ${info.tone}`}>{stateIcon[check.state]}</span>
+      <span className={`check-dot ${info.tone}`} />
       <span className="check-main">
         <b>{check.label}</b>
-        <small>{check.message ?? info.label} · {check.source ?? "sin fuente"}</small>
+        <small>{check.message ?? info.label}</small>
       </span>
-      <span className="check-meta">{check.responseMs != null ? `${check.responseMs} ms` : timeAgo(check.checkedAt)}</span>
+    </div>
+  );
+}
+
+function ModeCheck({ mode, label, checkedAt }: { mode?: "basic" | "full"; label: string; checkedAt?: string }) {
+  const state: ComponentState = mode === "full" ? "ok" : mode === "basic" ? "unknown" : "unknown";
+  const info = componentStateInfo[state];
+  return (
+    <div className={`tech-check ${info.tone}`} title={`${label} - ${checkedAt ? dateTime(checkedAt) : "sin comprobacion"}`}>
+      <span className={`check-dot ${info.tone}`} />
+      <span className="check-main">
+        <b>{label}</b>
+        <small>{checkedAt ? timeAgo(checkedAt) : "Sin comprobacion"}</small>
+      </span>
     </div>
   );
 }
@@ -208,13 +186,11 @@ function TechCheck({ check }: { check: ReturnType<typeof getTechnicalComponents>
 function InfoItem({
   label,
   value,
-  detail,
   tone,
   code,
 }: {
   label: string;
   value: string;
-  detail?: string;
   tone?: "ok" | "warn" | "down";
   code?: boolean;
 }) {
@@ -222,7 +198,6 @@ function InfoItem({
     <div className="info-item">
       <span>{label}</span>
       <b className={tone ? `text-${tone}` : undefined}>{code ? <code className="sha">{value}</code> : value}</b>
-      {detail && <small>{detail}</small>}
     </div>
   );
 }

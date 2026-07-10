@@ -88,6 +88,18 @@ export const IcSearch = (p: P) => (
     <path d="m20 20-3.2-3.2" />
   </svg>
 );
+export const IcMenu = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 7h16" />
+    <path d="M4 12h16" />
+    <path d="M4 17h16" />
+  </svg>
+);
+export const IcChevronDown = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
 export const IcBell = (p: P) => (
   <svg {...base(p)}>
     <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />

@@ -1,9 +1,10 @@
+import { useCallback, useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { NavProvider, useNav } from "./context/NavContext";
 import { SystemsProvider, useSystemsCtx } from "./context/SystemsContext";
 import Header from "./components/Header";
 import Login from "./components/Login";
-import RightPanel from "./components/RightPanel";
+import DashboardPanels from "./components/RightPanel";
 import Sidebar from "./components/Sidebar";
 import StatCards from "./components/StatCards";
 import SystemsSection from "./components/SystemsSection";
@@ -31,18 +32,28 @@ export default function App() {
   return (
     <NavProvider>
       <SystemsProvider>
-        <div className="app">
-          <Sidebar />
-          <div className="main">
-            <Header />
-            <div className="content">
-              <MainView />
-            </div>
-          </div>
-        </div>
+        <Shell />
         <GlobalModals />
       </SystemsProvider>
     </NavProvider>
+  );
+}
+
+function Shell() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  return (
+    <div className="app">
+      <Sidebar open={drawerOpen} onClose={closeDrawer} />
+      <div className="main">
+        <Header onOpenMenu={openDrawer} />
+        <div className="content">
+          <MainView />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -52,12 +63,10 @@ function MainView() {
   switch (view) {
     case "inicio":
       return (
-        <div className="dashboard-grid">
-          <div className="center-col">
-            <StatCards />
-            <DashboardSections />
-          </div>
-          <RightPanel />
+        <div className="dashboard-stack">
+          <DashboardPanels />
+          <StatCards />
+          <DashboardSections />
         </div>
       );
     case "sistemas":
@@ -71,7 +80,7 @@ function MainView() {
         <PlaceholderView
           icon={IcMonitor}
           title="Monitoreo"
-          text="Estado en vivo de uptime, errores y rendimiento de cada sistema. Lo conectamos a tus métricas reales en el próximo paso."
+          text="Estado en vivo de uptime, errores y rendimiento de cada sistema. Lo conectamos a tus metricas reales en el proximo paso."
         />
       );
     case "tareas":
@@ -79,7 +88,7 @@ function MainView() {
         <PlaceholderView
           icon={IcTasks}
           title="Tareas"
-          text="Tablero de tareas por sistema para organizar el trabajo del día."
+          text="Tablero de tareas por sistema para organizar el trabajo del dia."
         />
       );
     case "sesiones":
@@ -103,14 +112,14 @@ function MainView() {
         <PlaceholderView
           icon={IcDocs}
           title="Documentos"
-          text="Credenciales, contratos y notas técnicas de cada sistema en un solo lugar."
+          text="Credenciales, contratos y notas tecnicas de cada sistema en un solo lugar."
         />
       );
     case "config":
       return (
         <PlaceholderView
           icon={IcSettings}
-          title="Configuración"
+          title="Configuracion"
           text="Preferencias del panel, tema, cuenta y opciones de tu Centro de Control."
         />
       );

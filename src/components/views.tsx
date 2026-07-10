@@ -48,7 +48,7 @@ export function CobrosView() {
 
   return (
     <>
-      <PageHead title="Cobros" subtitle="Mensualidades de tus sistemas de cliente. El historial de pagos llega en la próxima etapa." />
+      <PageHead title="Mensualidades" subtitle="Mensualidades de tus sistemas de cliente. El historial de pagos llega en la próxima etapa." />
       {clientSystems.length === 0 ? (
         <EmptyClients what="cobros todavía" />
       ) : (

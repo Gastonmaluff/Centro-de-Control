@@ -1,9 +1,7 @@
 import { useSystemsCtx } from "../context/SystemsContext";
-import { computeStatus, lastActivityMs } from "../lib/status";
+import { computeStatus } from "../lib/status";
 import type { System } from "../data/types";
 import { IcAlert, IcCheck, IcRefresh, IcServer, IcTasks } from "./icons";
-
-const DAYS_30 = 30 * 24 * 60 * 60 * 1000;
 
 type Tone = "brand" | "ok" | "warn" | "down" | "muted";
 const toneStyle: Record<Tone, { bg: string; fg: string }> = {
@@ -26,11 +24,6 @@ export default function StatCards() {
   const down = countBy(systems, (s) => computeStatus(s) === "down");
   const unknown = countBy(systems, (s) => computeStatus(s) === "unknown");
   const openTodos = systems.reduce((a, s) => a + (s.todoStats?.open ?? 0), 0);
-  const inactive = countBy(systems, (s) => {
-    if (s.projectStatus === "archived") return false;
-    const ms = lastActivityMs(s);
-    return ms == null || ms > DAYS_30;
-  });
 
   const cards: { label: string; value: number; icon: typeof IcServer; tone: Tone }[] = [
     { label: "Operativos", value: operational, icon: IcCheck, tone: "ok" },
@@ -38,7 +31,6 @@ export default function StatCards() {
     { label: "Caidos", value: down, icon: IcAlert, tone: "down" },
     { label: "Monitoreo incompleto", value: unknown, icon: IcRefresh, tone: "muted" },
     { label: "Pendientes abiertos", value: openTodos, icon: IcTasks, tone: "brand" },
-    { label: "Sin actividad reciente", value: inactive, icon: IcServer, tone: "muted" },
   ];
 
   return (

@@ -3,9 +3,9 @@ import { useTheme } from "../context/ThemeContext";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus } from "../lib/status";
 import { runMonitorAll } from "../lib/monitoring";
-import { IcBell, IcMoon, IcPlus, IcRefresh, IcSearch, IcSun } from "./icons";
+import { IcBell, IcMenu, IcMoon, IcPlus, IcRefresh, IcSearch, IcSun } from "./icons";
 
-export default function Header() {
+export default function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { theme, setTheme } = useTheme();
   const { openAdd, systems } = useSystemsCtx();
   const [sweeping, setSweeping] = useState(false);
@@ -28,6 +28,9 @@ export default function Header() {
 
   return (
     <header className="header">
+      <button className="icon-btn menu-trigger" title="Abrir menu" aria-label="Abrir menu" onClick={onOpenMenu}>
+        <IcMenu width={18} height={18} />
+      </button>
       <div className="header-titles">
         <h1>Centro de Control</h1>
         <div className="header-sub">
@@ -39,7 +42,7 @@ export default function Header() {
       <div className="header-actions">
         <label className="search">
           <IcSearch width={16} height={16} />
-          <input placeholder="Buscar sistemas, clientes, cobros…" />
+          <input placeholder="Buscar sistemas, clientes, mensualidades..." />
           <kbd>⌘K</kbd>
         </label>
 
