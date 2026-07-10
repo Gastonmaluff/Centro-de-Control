@@ -1,22 +1,16 @@
 import type { JSX, ReactNode } from "react";
-import type { ChargeStatus } from "../data/types";
-import { useCharges } from "../hooks/useData";
+import { useSystemsCtx } from "../context/SystemsContext";
+import { money } from "../lib/format";
+import type { System } from "../data/types";
 
-const money = (n: number) => "$" + n.toLocaleString("es-AR");
-
-const statusMeta: Record<ChargeStatus, { pill: string; label: string }> = {
-  paid: { pill: "ok", label: "Pagado" },
-  pending: { pill: "warn", label: "Pendiente" },
-  "due-soon": { pill: "down", label: "Vence pronto" },
+const serviceLabel: Record<NonNullable<System["client"]>["serviceStatus"] & string, { label: string; tone: string }> = {
+  active: { label: "Activo", tone: "ok" },
+  paused: { label: "Pausado", tone: "warn" },
+  ended: { label: "Finalizado", tone: "" },
 };
 
 function initials(s: string) {
-  return s
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  return s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
 export function PageHead({ title, subtitle, action }: { title: string; subtitle: string; action?: ReactNode }) {
@@ -31,69 +25,87 @@ export function PageHead({ title, subtitle, action }: { title: string; subtitle:
   );
 }
 
+function EmptyClients({ what }: { what: string }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-ico" style={{ background: "var(--surface-hover)", color: "var(--text-muted)" }}>
+        👤
+      </div>
+      <h3>Sin {what}</h3>
+      <p>Agregá un sistema de tipo “cliente” con su mensualidad para verlo acá.</p>
+    </div>
+  );
+}
+
 /* ----------------------------------------------------------------- Cobros */
 
 export function CobrosView() {
-  const { data: charges } = useCharges();
-  const paid = charges.filter((c) => c.status === "paid").reduce((a, c) => a + c.amount, 0);
-  const pending = charges.filter((c) => c.status !== "paid").reduce((a, c) => a + c.amount, 0);
+  const { systems } = useSystemsCtx();
+  const clientSystems = systems.filter((s) => s.type === "client" && s.client);
+  const monthlyTotal = clientSystems.reduce((a, s) => a + (s.client?.monthly ?? 0), 0);
+  const active = clientSystems.filter((s) => s.client?.serviceStatus !== "ended");
+  const activeTotal = active.reduce((a, s) => a + (s.client?.monthly ?? 0), 0);
 
   return (
     <>
-      <PageHead title="Cobros" subtitle="Cobros mensuales de todos tus sistemas y clientes." />
-      <div className="view-cards">
-        <div className="big-total paid">
-          <div className="bt-label">Total cobrado</div>
-          <div className="bt-value">{money(paid)}</div>
-        </div>
-        <div className="big-total pending">
-          <div className="bt-label">Total pendiente</div>
-          <div className="bt-value">{money(pending)}</div>
-        </div>
-        <div className="big-total">
-          <div className="bt-label">Total del mes</div>
-          <div className="bt-value">{money(paid + pending)}</div>
-        </div>
-      </div>
+      <PageHead title="Cobros" subtitle="Mensualidades de tus sistemas de cliente. El historial de pagos llega en la próxima etapa." />
+      {clientSystems.length === 0 ? (
+        <EmptyClients what="cobros todavía" />
+      ) : (
+        <>
+          <div className="view-cards">
+            <div className="big-total">
+              <div className="bt-label">Mensual total</div>
+              <div className="bt-value">{money(monthlyTotal)}</div>
+            </div>
+            <div className="big-total paid">
+              <div className="bt-label">Activo mensual</div>
+              <div className="bt-value">{money(activeTotal)}</div>
+            </div>
+            <div className="big-total">
+              <div className="bt-label">Clientes</div>
+              <div className="bt-value">{clientSystems.length}</div>
+            </div>
+          </div>
 
-      <div className="table-card">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Sistema</th>
-              <th>Fecha</th>
-              <th style={{ textAlign: "right" }}>Monto</th>
-              <th style={{ textAlign: "right" }}>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {charges.map((c) => {
-              const m = statusMeta[c.status];
-              return (
-                <tr key={c.id}>
-                  <td>
-                    <div className="cell-client">
-                      <span className="cell-glyph" style={{ background: "linear-gradient(135deg,#4f46e5,#06b6d4)" }}>
-                        {initials(c.client)}
-                      </span>
-                      <span className="cell-strong">{c.client}</span>
-                    </div>
-                  </td>
-                  <td className="muted">{c.system}</td>
-                  <td className="muted">{c.date}</td>
-                  <td className="cell-money" style={{ textAlign: "right" }}>
-                    {money(c.amount)}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <span className={`pill ${m.pill}`}>{m.label}</span>
-                  </td>
+          <div className="table-card">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Sistema</th>
+                  <th>Vencimiento</th>
+                  <th style={{ textAlign: "right" }}>Mensualidad</th>
+                  <th style={{ textAlign: "right" }}>Servicio</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {clientSystems.map((s) => {
+                  const sv = serviceLabel[s.client?.serviceStatus ?? "active"];
+                  return (
+                    <tr key={s.id}>
+                      <td>
+                        <div className="cell-client">
+                          <span className="cell-glyph" style={{ background: `linear-gradient(135deg, ${s.accent}, ${s.accent2})` }}>
+                            {initials(s.client?.name || s.name)}
+                          </span>
+                          <span className="cell-strong">{s.client?.name || "—"}</span>
+                        </div>
+                      </td>
+                      <td className="muted">{s.name}</td>
+                      <td className="muted">{s.client?.dueDay ? `Día ${s.client.dueDay}` : "—"}</td>
+                      <td className="cell-money" style={{ textAlign: "right" }}>{money(s.client?.monthly)}</td>
+                      <td style={{ textAlign: "right" }}>
+                        <span className={`pill ${sv.tone}`}>{sv.label}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -101,47 +113,52 @@ export function CobrosView() {
 /* --------------------------------------------------------------- Clientes */
 
 export function ClientesView() {
-  const { data: charges } = useCharges();
+  const { systems } = useSystemsCtx();
+  const clientSystems = systems.filter((s) => s.type === "client" && s.client);
 
   return (
     <>
-      <PageHead title="Clientes" subtitle="Clientes activos y su sistema asociado." />
-      <div className="table-card">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Sistema</th>
-              <th style={{ textAlign: "right" }}>Mensualidad</th>
-              <th style={{ textAlign: "right" }}>Estado de cobro</th>
-            </tr>
-          </thead>
-          <tbody>
-            {charges.map((c) => {
-              const m = statusMeta[c.status];
-              return (
-                <tr key={c.id}>
-                  <td>
-                    <div className="cell-client">
-                      <span className="cell-glyph" style={{ background: "linear-gradient(135deg,#0ea5e9,#6366f1)" }}>
-                        {initials(c.client)}
-                      </span>
-                      <span className="cell-strong">{c.client}</span>
-                    </div>
-                  </td>
-                  <td className="muted">{c.system}</td>
-                  <td className="cell-money" style={{ textAlign: "right" }}>
-                    {money(c.amount)}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <span className={`pill ${m.pill}`}>{m.label}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <PageHead title="Clientes" subtitle="Clientes con sistema asociado y su mensualidad." />
+      {clientSystems.length === 0 ? (
+        <EmptyClients what="clientes" />
+      ) : (
+        <div className="table-card">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Contacto</th>
+                <th>Sistema</th>
+                <th style={{ textAlign: "right" }}>Mensualidad</th>
+                <th style={{ textAlign: "right" }}>Servicio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clientSystems.map((s) => {
+                const sv = serviceLabel[s.client?.serviceStatus ?? "active"];
+                return (
+                  <tr key={s.id}>
+                    <td>
+                      <div className="cell-client">
+                        <span className="cell-glyph" style={{ background: `linear-gradient(135deg, ${s.accent}, ${s.accent2})` }}>
+                          {initials(s.client?.name || s.name)}
+                        </span>
+                        <span className="cell-strong">{s.client?.name || "—"}</span>
+                      </div>
+                    </td>
+                    <td className="muted">{s.client?.contact || "—"}</td>
+                    <td className="muted">{s.name}</td>
+                    <td className="cell-money" style={{ textAlign: "right" }}>{money(s.client?.monthly)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <span className={`pill ${sv.tone}`}>{sv.label}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }

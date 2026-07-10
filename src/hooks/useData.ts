@@ -1,49 +1,71 @@
 import { useEffect, useState } from "react";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { ACTIVITY, CHARGES, SYSTEMS } from "../data/seed";
-import type { ActivityItem, Charge, SystemCardData } from "../data/types";
+import type { ActivityItem, Charge, System, Todo } from "../data/types";
 
 /**
- * Subscribes to a Firestore collection and returns its docs. While the
- * collection is empty (fresh project, not seeded yet) it returns the local
- * seed data so the dashboard always renders a complete, realistic view.
+ * Subscribes to a Firestore collection and returns its documents in real time.
+ * No demo/seed fallback: an empty collection returns an empty array. This keeps
+ * the panel honest — it only ever shows data that actually exists in Firestore.
  */
-function useCollection<T>(name: string, fallback: T[]): { data: T[]; usingSeed: boolean } {
-  const [data, setData] = useState<T[]>(fallback);
-  const [usingSeed, setUsingSeed] = useState(true);
+function useCollection<T>(name: string): { data: T[]; loading: boolean } {
+  const [data, setData] = useState<T[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const unsub = onSnapshot(
       query(collection(db, name)),
       (snap) => {
-        if (snap.empty) {
-          setData(fallback);
-          setUsingSeed(true);
-        } else {
-          setData(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as T[]);
-          setUsingSeed(false);
-        }
+        setData(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as T[]);
+        setLoading(false);
       },
       () => {
-        // Permission error / offline: keep showing seed data.
-        setData(fallback);
-        setUsingSeed(true);
+        setData([]);
+        setLoading(false);
       }
     );
     return unsub;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
-  return { data, usingSeed };
+  return { data, loading };
 }
 
 export function useSystems() {
-  return useCollection<SystemCardData>("systems", SYSTEMS);
+  return useCollection<System>("systems");
 }
 export function useCharges() {
-  return useCollection<Charge>("charges", CHARGES);
+  return useCollection<Charge>("charges");
 }
 export function useActivity() {
-  return useCollection<ActivityItem>("activity", ACTIVITY);
+  return useCollection<ActivityItem>("activity");
+}
+
+/** Pendientes de un sistema (subcolección systems/{id}/todos). */
+export function useTodos(systemId: string | null): { data: Todo[]; loading: boolean } {
+  const [data, setData] = useState<Todo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!systemId) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const unsub = onSnapshot(
+      query(collection(db, "systems", systemId, "todos")),
+      (snap) => {
+        setData(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Todo[]);
+        setLoading(false);
+      },
+      () => {
+        setData([]);
+        setLoading(false);
+      }
+    );
+    return unsub;
+  }, [systemId]);
+
+  return { data, loading };
 }

@@ -1,0 +1,28 @@
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "../firebase/config";
+import type { Monitoring } from "../data/types";
+
+/**
+ * Pide al backend (Cloud Function `monitorUrl`) que verifique la URL pública.
+ * El chequeo NO se hace desde el navegador (CORS / seguridad): si la Function
+ * todavía no está desplegada, devolvemos un resultado honesto marcando que el
+ * backend no está disponible. Nunca inventamos el estado.
+ */
+export async function checkUrl(url?: string): Promise<Monitoring> {
+  const checkedAt = new Date().toISOString();
+  if (!url || !url.trim()) {
+    return { source: "cloud-function", checkedAt, error: "Sin URL pública" };
+  }
+  try {
+    const functions = getFunctions(app);
+    const call = httpsCallable<{ url: string }, Partial<Monitoring>>(functions, "monitorUrl");
+    const res = await call({ url: url.trim() });
+    return { source: "cloud-function", checkedAt, mode: "basic", ...res.data };
+  } catch {
+    return {
+      source: "cloud-function",
+      checkedAt,
+      error: "Backend de monitoreo no disponible todavía",
+    };
+  }
+}

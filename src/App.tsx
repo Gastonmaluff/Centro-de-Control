@@ -1,12 +1,15 @@
 import { useAuth } from "./context/AuthContext";
 import { NavProvider, useNav } from "./context/NavContext";
-import { SystemsProvider } from "./context/SystemsContext";
+import { SystemsProvider, useSystemsCtx } from "./context/SystemsContext";
 import Header from "./components/Header";
 import Login from "./components/Login";
 import RightPanel from "./components/RightPanel";
 import Sidebar from "./components/Sidebar";
 import StatCards from "./components/StatCards";
 import SystemsSection from "./components/SystemsSection";
+import DashboardSections from "./components/DashboardSections";
+import SystemFormModal from "./components/SystemFormModal";
+import TodosModal from "./components/TodosModal";
 import { CobrosView, ClientesView, PlaceholderView } from "./components/views";
 import { IcBolt, IcCosts, IcDocs, IcMonitor, IcSessions, IcSettings, IcTasks } from "./components/icons";
 
@@ -37,6 +40,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        <GlobalModals />
       </SystemsProvider>
     </NavProvider>
   );
@@ -51,7 +55,7 @@ function MainView() {
         <div className="dashboard-grid">
           <div className="center-col">
             <StatCards />
-            <SystemsSection />
+            <DashboardSections />
           </div>
           <RightPanel />
         </div>
@@ -113,4 +117,14 @@ function MainView() {
     default:
       return null;
   }
+}
+
+function GlobalModals() {
+  const { modalOpen, editing, closeModal, todosFor, closeTodos } = useSystemsCtx();
+  return (
+    <>
+      {modalOpen && <SystemFormModal initial={editing} onClose={closeModal} />}
+      {todosFor && <TodosModal system={todosFor} onClose={closeTodos} />}
+    </>
+  );
 }

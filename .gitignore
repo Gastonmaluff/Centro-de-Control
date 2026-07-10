@@ -30,3 +30,7 @@ pnpm-debug.log*
 .firebase
 firebase-debug.log
 firestore-debug.log
+
+# cloud functions build
+functions/lib
+functions/node_modules

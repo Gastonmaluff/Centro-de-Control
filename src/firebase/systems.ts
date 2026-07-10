@@ -1,34 +1,34 @@
-import { addDoc, collection, deleteDoc, doc, setDoc, writeBatch } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./config";
-import type { SystemCardData } from "../data/types";
-import { SYSTEMS } from "../data/seed";
+import type { System } from "../data/types";
 
-/** All the editable fields of a system (everything except the Firestore id). */
-export type SystemInput = Omit<SystemCardData, "id">;
+/** Campos editables de un sistema (todo menos el id de Firestore). */
+export type SystemInput = Omit<System, "id" | "createdAt" | "updatedAt">;
 
 const COL = "systems";
 
-/** Creates a new system document with an auto-generated id. */
-export async function createSystem(data: SystemInput): Promise<void> {
-  await addDoc(collection(db, COL), data);
+/** Crea un sistema nuevo con id autogenerado. Devuelve el id. */
+export async function createSystem(data: SystemInput): Promise<string> {
+  const ref = await addDoc(collection(db, COL), {
+    ...data,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    _createdAt: serverTimestamp(),
+  });
+  return ref.id;
 }
 
-/** Overwrites an existing system document. */
+/** Reemplaza un sistema existente conservando createdAt. */
 export async function updateSystem(id: string, data: SystemInput): Promise<void> {
-  await setDoc(doc(db, COL, id), data);
+  await setDoc(doc(db, COL, id), { ...data, updatedAt: new Date().toISOString() }, { merge: true });
 }
 
-/** Deletes a system document. */
+/** Actualización parcial (por ejemplo, resultado de monitoreo o git). */
+export async function patchSystem(id: string, patch: Partial<System>): Promise<void> {
+  await updateDoc(doc(db, COL, id), { ...patch, updatedAt: new Date().toISOString() });
+}
+
+/** Elimina un sistema. */
 export async function deleteSystem(id: string): Promise<void> {
   await deleteDoc(doc(db, COL, id));
-}
-
-/** Seeds the six example systems into Firestore (one click "importar ejemplos"). */
-export async function importExampleSystems(): Promise<void> {
-  const batch = writeBatch(db);
-  for (const sys of SYSTEMS) {
-    const { id, ...rest } = sys;
-    batch.set(doc(db, COL, id), rest);
-  }
-  await batch.commit();
 }

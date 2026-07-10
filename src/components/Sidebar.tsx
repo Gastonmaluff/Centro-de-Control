@@ -1,5 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { useNav, type View } from "../context/NavContext";
+import { useSystemsCtx } from "../context/SystemsContext";
 import {
   IcBilling,
   IcBolt,
@@ -25,9 +26,9 @@ interface NavEntry {
 
 const NAV: NavEntry[] = [
   { key: "inicio", label: "Inicio", icon: IcHome },
-  { key: "sistemas", label: "Sistemas", icon: IcSystems, badge: "14" },
+  { key: "sistemas", label: "Sistemas", icon: IcSystems },
   { key: "clientes", label: "Clientes", icon: IcClients },
-  { key: "cobros", label: "Cobros", icon: IcBilling, badge: "2", alert: true },
+  { key: "cobros", label: "Cobros", icon: IcBilling },
   { key: "monitoreo", label: "Monitoreo", icon: IcMonitor },
   { key: "tareas", label: "Tareas", icon: IcTasks },
   { key: "sesiones", label: "Sesiones de trabajo", icon: IcSessions },
@@ -39,6 +40,9 @@ const NAV: NavEntry[] = [
 export default function Sidebar() {
   const { view: active, setView } = useNav();
   const { user, logout } = useAuth();
+  const { systems } = useSystemsCtx();
+  const badges: Partial<Record<View, string>> = { sistemas: systems.length ? String(systems.length) : undefined };
+  const nav = NAV.map((n) => ({ ...n, badge: badges[n.key] ?? n.badge }));
 
   const name = user?.displayName || "Gastón M.";
   const email = user?.email || "gaston@centrodecontrol.app";
@@ -63,11 +67,11 @@ export default function Sidebar() {
 
       <nav className="nav-section">
         <div className="nav-label">General</div>
-        {NAV.slice(0, 5).map((item) => (
+        {nav.slice(0, 5).map((item) => (
           <NavButton key={item.key} item={item} active={active} onClick={setView} />
         ))}
         <div className="nav-label">Trabajo</div>
-        {NAV.slice(5).map((item) => (
+        {nav.slice(5).map((item) => (
           <NavButton key={item.key} item={item} active={active} onClick={setView} />
         ))}
       </nav>

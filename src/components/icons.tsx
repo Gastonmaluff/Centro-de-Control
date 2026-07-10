@@ -195,6 +195,14 @@ export const IcTrash = (p: P) => (
     <path d="M10 11v6M14 11v6" />
   </svg>
 );
+export const IcRefresh = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M20 11a8 8 0 0 0-14-4.5L4 8" />
+    <path d="M4 4v4h4" />
+    <path d="M4 13a8 8 0 0 0 14 4.5L20 16" />
+    <path d="M20 20v-4h-4" />
+  </svg>
+);
 export const IcDownload = (p: P) => (
   <svg {...base(p)}>
     <path d="M12 3v12M8 11l4 4 4-4" />

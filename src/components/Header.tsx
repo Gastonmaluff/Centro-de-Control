@@ -1,17 +1,23 @@
 import { useTheme } from "../context/ThemeContext";
 import { useSystemsCtx } from "../context/SystemsContext";
+import { computeStatus } from "../lib/status";
 import { IcBell, IcMoon, IcPlus, IcSearch, IcSun } from "./icons";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
-  const { openAdd } = useSystemsCtx();
+  const { openAdd, systems } = useSystemsCtx();
+
+  const operational = systems.filter((s) => computeStatus(s) === "operational").length;
+  const attention = systems.filter((s) => ["warning", "down"].includes(computeStatus(s))).length;
+  const openTodos = systems.reduce((a, s) => a + (s.todoStats?.open ?? 0), 0);
 
   return (
     <header className="header">
       <div className="header-titles">
         <h1>Centro de Control</h1>
         <div className="header-sub">
-          <b>14 sistemas</b> activos, <b>2 cobros</b> pendientes y <b>3 proyectos</b> en desarrollo
+          <b>{systems.length} sistemas</b> · <b>{operational} operativos</b> ·{" "}
+          <b>{attention} requieren atención</b> · <b>{openTodos} pendientes</b>
         </div>
       </div>
 

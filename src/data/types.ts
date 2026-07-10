@@ -1,42 +1,116 @@
-export type ServiceStatus = "ok" | "warn" | "down";
+/* =========================================================================
+   Modelo de datos de Centro de Control.
 
-export interface InfraState {
-  app: ServiceStatus;
-  firebase: ServiceStatus;
-  domain: ServiceStatus;
-  backup: ServiceStatus;
-}
+   Principio: separar lo que SOLO el usuario sabe (se carga a mano) de lo
+   VERIFICABLE (se descubre automáticamente y siempre lleva `source` + fecha
+   de comprobación). Nunca se inventan datos técnicos.
+   ========================================================================= */
 
-export interface Metric {
-  label: string;
-  value: string;
-  hint?: string;
-}
+export type SystemType = "own" | "client";
 
-export interface QuickLinks {
-  github?: string;
-  firebase?: string;
-  cloudflare?: string;
+export type ProjectStatus = "dev" | "prod" | "maintenance" | "paused" | "archived";
+
+/** Estado técnico calculado automáticamente (no se carga a mano). */
+export type ComputedStatus = "operational" | "warning" | "down" | "unknown" | "archived";
+
+export interface SystemLinks {
+  publicUrl?: string;
+  adminUrl?: string;
+  github?: string; // "owner/repo" o URL completa
+  firebaseProject?: string;
   domain?: string;
+  cloudflare?: string;
+  docs?: string; // carpeta local o documentación
 }
 
-export interface SystemCardData {
+export interface ClientInfo {
+  name?: string;
+  contact?: string;
+  monthly?: number;
+  dueDay?: number; // 1..31
+  startDate?: string;
+  serviceStatus?: "active" | "paused" | "ended";
+  notes?: string;
+}
+
+/** Resultado de monitoreo verificado. Lo escribe el análisis inicial / backend. */
+export interface Monitoring {
+  source?: string; // "cloud-function" | "manual" | ...
+  checkedAt?: string; // ISO
+  httpStatus?: number;
+  responseMs?: number;
+  https?: boolean;
+  redirected?: boolean;
+  up?: boolean;
+  consecutiveFails?: number;
+  mode?: "basic" | "full"; // "full" si el sistema expone /api/health
+  error?: string;
+}
+
+/** Último commit obtenido de GitHub (repos públicos, client-side por ahora). */
+export interface GitInfo {
+  connected?: boolean;
+  source?: string; // "github"
+  checkedAt?: string;
+  sha?: string;
+  message?: string;
+  author?: string;
+  date?: string; // fecha del commit (ISO)
+  branch?: string;
+  error?: string;
+}
+
+/** Contadores denormalizados para pintar la card sin leer toda la subcolección. */
+export interface TodoStats {
+  open: number;
+  topPriorityTitle?: string;
+  topPriority?: TodoPriority;
+  lastDoneTitle?: string;
+  lastDoneAt?: string;
+}
+
+export interface System {
   id: string;
+  // --- lo carga el usuario ---
   name: string;
-  tagline: string;
-  /** Short avatar text (2 letters/emoji) shown in the card badge. */
-  glyph: string;
-  /** Primary + secondary accent used to give the card its own identity. */
+  description?: string;
+  type: SystemType;
+  projectStatus: ProjectStatus;
+  glyph?: string;
   accent: string;
   accent2: string;
-  active: boolean;
-  infra: InfraState;
-  metrics: Metric[];
-  lastDeploy: string;
-  monthly?: number;
-  nextCharge?: string;
-  links: QuickLinks;
+  createdApprox?: string;
+  links: SystemLinks;
+  client?: ClientInfo;
+  // --- verificable (se descubre) ---
+  monitoring?: Monitoring;
+  git?: GitInfo;
+  todoStats?: TodoStats;
+  // --- metadatos internos ---
+  createdAt?: string;
+  updatedAt?: string;
+  lastWorkedAt?: string;
 }
+
+/* ------------------------------------------------------------- Pendientes */
+
+export type TodoKind = "task" | "bug" | "polish" | "idea";
+export type TodoPriority = "low" | "medium" | "high" | "critical";
+export type TodoStatus = "pending" | "in-progress" | "done" | "discarded";
+
+export interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  kind: TodoKind;
+  priority: TodoPriority;
+  status: TodoStatus;
+  createdAt?: string;
+  doneAt?: string;
+  notes?: string;
+}
+
+/* ----------------------------------------------------------- Facturación */
 
 export type ChargeStatus = "paid" | "pending" | "due-soon";
 
@@ -49,7 +123,18 @@ export interface Charge {
   status: ChargeStatus;
 }
 
-export type ActivityKind = "deploy" | "backup" | "payment" | "update";
+/* ------------------------------------------------------------- Actividad */
+
+export type ActivityKind =
+  | "created"
+  | "commit"
+  | "deploy"
+  | "deploy-failed"
+  | "down"
+  | "recovered"
+  | "task"
+  | "polish"
+  | "payment";
 
 export interface ActivityItem {
   id: string;

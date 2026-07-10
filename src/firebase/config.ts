@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 // Firebase Web SDK configuration.
 // Values come from .env.local (see .env.example). These are public client
@@ -17,4 +17,6 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// ignoreUndefinedProperties: escribir objetos con campos undefined (monitoring,
+// git, todoStats parciales) sin que Firestore rechace la operación.
+export const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
