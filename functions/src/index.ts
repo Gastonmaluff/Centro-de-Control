@@ -6,6 +6,9 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
 initializeApp();
 const db = getFirestore();
+// Igual que en el cliente: permitir escribir objetos con campos undefined
+// (health.status/version, httpStatus, etc.) sin que el admin SDK rechace el set.
+db.settings({ ignoreUndefinedProperties: true });
 
 const REGION = "us-central1";
 const REQUEST_TIMEOUT_MS = 15000;
