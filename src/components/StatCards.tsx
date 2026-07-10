@@ -34,9 +34,9 @@ export default function StatCards() {
 
   const cards: { label: string; value: number; icon: typeof IcServer; tone: Tone }[] = [
     { label: "Operativos", value: operational, icon: IcCheck, tone: "ok" },
-    { label: "Con advertencias", value: warning, icon: IcAlert, tone: "warn" },
-    { label: "Caídos", value: down, icon: IcAlert, tone: "down" },
-    { label: "No conectados", value: unknown, icon: IcRefresh, tone: "muted" },
+    { label: "Requieren atencion", value: warning, icon: IcAlert, tone: "warn" },
+    { label: "Caidos", value: down, icon: IcAlert, tone: "down" },
+    { label: "Monitoreo incompleto", value: unknown, icon: IcRefresh, tone: "muted" },
     { label: "Pendientes abiertos", value: openTodos, icon: IcTasks, tone: "brand" },
     { label: "Sin actividad reciente", value: inactive, icon: IcServer, tone: "muted" },
   ];

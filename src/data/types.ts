@@ -12,6 +12,50 @@ export type ProjectStatus = "dev" | "prod" | "maintenance" | "paused" | "archive
 
 /** Estado técnico calculado automáticamente (no se carga a mano). */
 export type ComputedStatus = "operational" | "warning" | "down" | "unknown" | "archived";
+export type ComponentState = "ok" | "warn" | "down" | "unknown";
+export type ComponentKey =
+  | "application"
+  | "database"
+  | "authentication"
+  | "functions"
+  | "storage"
+  | "domain"
+  | "backup";
+
+export interface ComponentCheck {
+  state: ComponentState;
+  configured?: boolean;
+  critical?: boolean;
+  checkedAt?: string;
+  source?: string;
+  message?: string;
+  responseMs?: number;
+  consecutiveFails?: number;
+}
+
+export interface BackupCheck extends ComponentCheck {
+  lastSuccessAt?: string;
+  lastResult?: "success" | "failed" | "missing" | "unknown";
+  nextRunAt?: string;
+  maxAgeHours?: number;
+}
+
+export interface HealthEndpointInfo {
+  url?: string;
+  status?: string;
+  version?: string;
+  checkedAt?: string;
+  error?: string;
+}
+
+export interface DeployInfo {
+  source?: string;
+  checkedAt?: string;
+  status?: "success" | "failed" | "running" | "unknown";
+  message?: string;
+  url?: string;
+  version?: string;
+}
 
 export interface SystemLinks {
   publicUrl?: string;
@@ -45,6 +89,9 @@ export interface Monitoring {
   consecutiveFails?: number;
   mode?: "basic" | "full"; // "full" si el sistema expone /api/health
   error?: string;
+  components?: Partial<Record<ComponentKey, ComponentCheck>>;
+  backup?: BackupCheck;
+  health?: HealthEndpointInfo;
 }
 
 /** Último commit obtenido de GitHub (repos públicos, client-side por ahora). */
@@ -85,6 +132,7 @@ export interface System {
   // --- verificable (se descubre) ---
   monitoring?: Monitoring;
   git?: GitInfo;
+  deploy?: DeployInfo;
   todoStats?: TodoStats;
   // --- metadatos internos ---
   createdAt?: string;

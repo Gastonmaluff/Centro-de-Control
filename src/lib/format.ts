@@ -23,11 +23,22 @@ export function timeAgo(iso?: string): string {
   return `hace ${y} año${y > 1 ? "s" : ""}`;
 }
 
+export function dateTime(iso?: string): string {
+  if (!iso) return "Sin comprobacion";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Fecha invalida";
+  return date.toLocaleString("es-PY", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 /** Convierte los campos de links en URLs abribles. */
 export function hrefs(links: SystemLinks) {
   const repo = parseRepo(links.github);
   return {
     public: links.publicUrl || undefined,
+    admin: links.adminUrl || undefined,
     github: repo ? `https://github.com/${repo.owner}/${repo.repo}` : links.github || undefined,
     firebase: links.firebaseProject
       ? `https://console.firebase.google.com/project/${links.firebaseProject}`

@@ -34,3 +34,11 @@ export async function runMonitorAll(): Promise<number> {
   const res = await call({});
   return res.data.checked;
 }
+
+/** Reanaliza un sistema puntual desde el backend seguro. */
+export async function runMonitorSystem(id: string): Promise<boolean> {
+  const functions = getFunctions(app);
+  const call = httpsCallable<{ id: string }, { checked: boolean }>(functions, "monitorSystem");
+  const res = await call({ id });
+  return res.data.checked;
+}

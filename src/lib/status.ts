@@ -1,48 +1,29 @@
 import type { ComputedStatus, ProjectStatus, System } from "../data/types";
+import { computeTechnicalStatus } from "./technical";
 
-/**
- * Calcula el estado técnico automáticamente. Nunca se carga a mano.
- * - archived: proyecto archivado.
- * - unknown ("No conectado"): todavía no hay datos de monitoreo.
- * - down: la app falló en varias comprobaciones consecutivas.
- * - warning: responde pero hay algo no crítico (latencia alta, sin HTTPS, etc.).
- * - operational: responde bien y sin alertas.
- */
 export function computeStatus(sys: System): ComputedStatus {
-  if (sys.projectStatus === "archived") return "archived";
-
-  const m = sys.monitoring;
-  if (!m || m.up === undefined) return "unknown";
-
-  if (m.up === false) {
-    return (m.consecutiveFails ?? 1) >= 2 ? "down" : "warning";
-  }
-
-  const highLatency = m.responseMs != null && m.responseMs > 3000;
-  const noHttps = m.https === false;
-  if (highLatency || noHttps) return "warning";
-  return "operational";
+  return computeTechnicalStatus(sys);
 }
 
 export const statusInfo: Record<ComputedStatus, { label: string; tone: "ok" | "warn" | "down" | "muted" }> = {
   operational: { label: "Operativo", tone: "ok" },
-  warning: { label: "Con advertencias", tone: "warn" },
-  down: { label: "Caído", tone: "down" },
-  unknown: { label: "No conectado", tone: "muted" },
+  warning: { label: "Requiere atencion", tone: "warn" },
+  down: { label: "Caido", tone: "down" },
+  unknown: { label: "Monitoreo incompleto", tone: "muted" },
   archived: { label: "Archivado", tone: "muted" },
 };
 
 export const projectStatusInfo: Record<ProjectStatus, string> = {
   dev: "En desarrollo",
-  prod: "En producción",
+  prod: "En produccion",
   maintenance: "En mantenimiento",
   paused: "Pausado",
   archived: "Archivado",
 };
 
-/** ¿Hace cuánto que no hay actividad? Usa último commit, deploy o trabajo. */
+/** Hace cuanto que no hay actividad. Usa commit, deploy, monitoreo o trabajo. */
 export function lastActivityMs(sys: System): number | null {
-  const dates = [sys.lastWorkedAt, sys.git?.date, sys.monitoring?.checkedAt]
+  const dates = [sys.lastWorkedAt, sys.git?.date, sys.deploy?.checkedAt, sys.monitoring?.checkedAt]
     .filter(Boolean)
     .map((d) => new Date(d as string).getTime())
     .filter((n) => !Number.isNaN(n));
@@ -61,7 +42,7 @@ export type SectionKey =
   | "archived";
 
 export const sectionInfo: Record<SectionKey, { title: string; hint: string }> = {
-  attention: { title: "Necesitan atención", hint: "Caídos, con advertencias o tareas críticas" },
+  attention: { title: "Necesitan atencion", hint: "Caidos, advertencias tecnicas o tareas criticas" },
   dev: { title: "En desarrollo", hint: "Proyectos actualmente activos" },
   polish: { title: "Pendientes de pulida", hint: "Funcionan pero tienen mejoras registradas" },
   stable: { title: "Estables", hint: "Operativos y sin pendientes importantes" },
@@ -71,13 +52,13 @@ export const sectionInfo: Record<SectionKey, { title: string; hint: string }> = 
 
 export const SECTION_ORDER: SectionKey[] = ["attention", "dev", "polish", "stable", "inactive", "archived"];
 
-/** Asigna cada sistema a la primera sección que corresponda. */
+/** Asigna cada sistema a la primera seccion que corresponda. */
 export function sectionFor(sys: System): SectionKey {
   const status = computeStatus(sys);
   if (status === "archived") return "archived";
 
   const critical = sys.todoStats?.topPriority === "critical" && (sys.todoStats?.open ?? 0) > 0;
-  if (status === "down" || status === "warning" || critical) return "attention";
+  if (status === "down" || status === "warning" || status === "unknown" || critical) return "attention";
 
   if (sys.projectStatus === "dev") return "dev";
 
