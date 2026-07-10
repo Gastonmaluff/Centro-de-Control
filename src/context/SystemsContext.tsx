@@ -2,6 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import type { System } from "../data/types";
 import { useSystems } from "../hooks/useData";
 import { createSystem, deleteSystem, updateSystem, type SystemInput } from "../firebase/systems";
+import { deleteSystemHeader } from "../firebase/storage";
 
 interface SystemsCtx {
   systems: System[];
@@ -37,6 +38,15 @@ export function SystemsProvider({ children }: { children: ReactNode }) {
     return createSystem(data);
   };
 
+  const removeSystem = async (id: string) => {
+    try {
+      await deleteSystemHeader(id);
+    } catch {
+      // La baja del documento no debe quedar bloqueada por un archivo huerfano.
+    }
+    await deleteSystem(id);
+  };
+
   return (
     <Ctx.Provider
       value={{
@@ -57,7 +67,7 @@ export function SystemsProvider({ children }: { children: ReactNode }) {
         openTodos: setTodosFor,
         closeTodos: () => setTodosFor(null),
         saveSystem,
-        removeSystem: (id) => deleteSystem(id),
+        removeSystem,
       }}
     >
       {children}

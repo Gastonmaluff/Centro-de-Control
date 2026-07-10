@@ -221,6 +221,19 @@ export const IcDownload = (p: P) => (
     <path d="M4 19h16" />
   </svg>
 );
+export const IcUpload = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 16V4M8 8l4-4 4 4" />
+    <path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
+  </svg>
+);
+export const IcImage = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="8.5" cy="9" r="1.5" />
+    <path d="m4 17 4.5-4.5 3 3 2.5-2.5 6 6" />
+  </svg>
+);
 
 // Brand marks (simplified) for quick links
 export const IcGithub = (p: P) => (

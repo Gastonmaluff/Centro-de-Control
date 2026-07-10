@@ -126,6 +126,12 @@ export interface System {
   glyph?: string;
   accent: string;
   accent2: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  headerImageUrl?: string;
+  headerImageAlt?: string;
+  headerImagePosition?: "left" | "center" | "right";
+  headerImageEnabled?: boolean;
   createdApprox?: string;
   links: SystemLinks;
   client?: ClientInfo;

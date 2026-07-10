@@ -1,11 +1,12 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from "react";
 import type { ProjectStatus, System, SystemType } from "../data/types";
 import type { SystemInput } from "../firebase/systems";
 import { patchSystem } from "../firebase/systems";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { fetchLastCommit } from "../lib/github";
 import { checkUrl } from "../lib/monitoring";
-import { IcCheck, IcPlus } from "./icons";
+import { deleteSystemHeader, uploadSystemHeader } from "../firebase/storage";
+import { IcCheck, IcImage, IcPlus, IcTrash, IcUpload } from "./icons";
 
 interface Props {
   initial: System | null;
@@ -20,6 +21,9 @@ type FormState = {
   glyph: string;
   accent: string;
   accent2: string;
+  headerImageAlt: string;
+  headerImagePosition: "left" | "center" | "right";
+  headerImageEnabled: boolean;
   createdApprox: string;
   publicUrl: string;
   adminUrl: string;
@@ -44,8 +48,11 @@ function initState(s: System | null): FormState {
     type: s?.type ?? "own",
     projectStatus: s?.projectStatus ?? "dev",
     glyph: s?.glyph ?? "",
-    accent: s?.accent ?? "#4f46e5",
-    accent2: s?.accent2 ?? "#06b6d4",
+    accent: s?.primaryColor ?? s?.accent ?? "#4f46e5",
+    accent2: s?.secondaryColor ?? s?.accent2 ?? "#06b6d4",
+    headerImageAlt: s?.headerImageAlt ?? "",
+    headerImagePosition: s?.headerImagePosition ?? "right",
+    headerImageEnabled: s?.headerImageEnabled ?? Boolean(s?.headerImageUrl),
     createdApprox: s?.createdApprox ?? "",
     publicUrl: s?.links.publicUrl ?? "",
     adminUrl: s?.links.adminUrl ?? "",
@@ -88,12 +95,33 @@ interface Step {
   note?: string;
 }
 
+function readImageSize(url: string): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
 export default function SystemFormModal({ initial, onClose }: Props) {
   const { saveSystem } = useSystemsCtx();
   const [f, setF] = useState<FormState>(() => initState(initial));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [steps, setSteps] = useState<Step[] | null>(null);
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
+  const [headerPreview, setHeaderPreview] = useState(initial?.headerImageUrl ?? "");
+  const [headerRemoved, setHeaderRemoved] = useState(false);
+  const [imageNote, setImageNote] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (headerPreview.startsWith("blob:")) URL.revokeObjectURL(headerPreview);
+    };
+  }, [headerPreview]);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
 
@@ -125,6 +153,12 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       glyph,
       accent: f.accent,
       accent2: f.accent2,
+      primaryColor: f.accent,
+      secondaryColor: f.accent2,
+      headerImageUrl: headerRemoved ? "" : initial?.headerImageUrl ?? "",
+      headerImageAlt: f.headerImageAlt.trim() || `${f.name.trim()} - imagen de cabecera`,
+      headerImagePosition: f.headerImagePosition,
+      headerImageEnabled: f.headerImageEnabled && Boolean(headerPreview),
       links,
       ...clean({ description: f.description.trim(), createdApprox: f.createdApprox.trim() }),
     };
@@ -145,6 +179,57 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     return base;
   };
 
+  const selectHeaderFile = async (file?: File) => {
+    setDragging(false);
+    if (!file) return;
+    if (!["image/png", "image/webp"].includes(file.type)) {
+      setError("La imagen debe ser PNG o WEBP.");
+      return;
+    }
+    if (file.size >= 5 * 1024 * 1024) {
+      setError("La imagen supera el limite de 5 MB. Recomendamos menos de 500 KB.");
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    const dimensions = await readImageSize(preview);
+    setHeaderFile(file);
+    setHeaderPreview(preview);
+    setHeaderRemoved(false);
+    set("headerImageEnabled", true);
+    setError("");
+
+    const weight = `${Math.round(file.size / 1024)} KB`;
+    const ratio = dimensions ? dimensions.width / dimensions.height : 0;
+    const warnings = [
+      file.size > 500 * 1024 ? "conviene reducirla a menos de 500 KB" : null,
+      dimensions && (dimensions.width < 1200 || ratio < 5.5 || ratio > 6.8)
+        ? "el formato ideal es 1600 x 260 px"
+        : null,
+    ].filter(Boolean);
+    setImageNote(`${dimensions ? `${dimensions.width} x ${dimensions.height} px - ` : ""}${weight}${warnings.length ? ` - ${warnings.join("; ")}` : " - lista para subir"}`);
+  };
+
+  const removeHeader = () => {
+    setHeaderFile(null);
+    setHeaderPreview("");
+    setHeaderRemoved(true);
+    setImageNote("Se eliminara al guardar los cambios.");
+    set("headerImageEnabled", false);
+  };
+
+  const persistHeader = async (systemId: string) => {
+    if (headerFile) {
+      const headerImageUrl = await uploadSystemHeader(systemId, headerFile);
+      await patchSystem(systemId, { headerImageUrl, headerImageEnabled: f.headerImageEnabled });
+      return;
+    }
+    if (headerRemoved && initial?.headerImageUrl) {
+      await deleteSystemHeader(systemId);
+      await patchSystem(systemId, { headerImageUrl: "", headerImageEnabled: false });
+    }
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!f.name.trim()) {
@@ -160,6 +245,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     if (initial) {
       try {
         await saveSystem(initial.id, data);
+        await persistHeader(initial.id);
         onClose();
       } catch {
         setError("No se pudo guardar. Revisá tu conexión e intentá de nuevo.");
@@ -171,6 +257,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     // Alta nueva: guardar + analizar con progreso visible.
     const s: Step[] = [
       { label: "Guardando información", state: "active" },
+      { label: "Subiendo imagen de cabecera", state: "pending" },
       { label: "Analizando URL pública", state: "pending" },
       { label: "Conectando GitHub", state: "pending" },
       { label: "Guardando resultados", state: "pending" },
@@ -185,13 +272,21 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       const id = await saveSystem(null, data);
       upd(0, "done");
 
-      // URL pública (vía backend; honesto si no está disponible)
       upd(1, "active");
+      if (headerFile) {
+        await persistHeader(id);
+        upd(1, "done");
+      } else {
+        upd(1, "skip", "Se usara el degradado de colores");
+      }
+
+      // URL pública (vía backend; honesto si no está disponible)
+      upd(2, "active");
       const monitoring = data.links.publicUrl
         ? await checkUrl(data.links.publicUrl)
         : null;
       upd(
-        1,
+        2,
         data.links.publicUrl ? (monitoring?.up ? "done" : "fail") : "skip",
         !data.links.publicUrl
           ? "Sin URL"
@@ -201,21 +296,21 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       );
 
       // GitHub último commit (repos públicos)
-      upd(2, "active");
+      upd(3, "active");
       const git = data.links.github ? await fetchLastCommit(data.links.github) : null;
       upd(
-        2,
+        3,
         data.links.github ? (git?.connected ? "done" : "fail") : "skip",
         !data.links.github ? "Sin repo" : git?.connected ? `${git.sha} · ${git.message ?? ""}`.slice(0, 40) : git?.error ?? "No conectado"
       );
 
       // Persistir resultados verificados
-      upd(3, "active");
+      upd(4, "active");
       const patch: Record<string, unknown> = {};
       if (monitoring) patch.monitoring = monitoring;
       if (git) patch.git = git;
       if (Object.keys(patch).length) await patchSystem(id, patch);
-      upd(3, "done");
+      upd(4, "done");
 
       setTimeout(onClose, 650);
     } catch {
@@ -299,15 +394,78 @@ export default function SystemFormModal({ initial, onClose }: Props) {
               <Field label="Creación aprox. (opcional)">
                 <input value={f.createdApprox} onChange={(e) => set("createdApprox", e.target.value)} placeholder="2025" />
               </Field>
-              <Field label="Color principal">
-                <input className="color" type="color" value={f.accent} onChange={(e) => set("accent", e.target.value)} />
-              </Field>
-              <Field label="Color secundario">
-                <input className="color" type="color" value={f.accent2} onChange={(e) => set("accent2", e.target.value)} />
-              </Field>
             </div>
 
-            {/* 2. Accesos y conexiones */}
+            {/* 2. Identidad visual */}
+            <div className="form-section">Imagen de cabecera de la card</div>
+            <div
+              className={`header-upload ${dragging ? "dragging" : ""}`}
+              onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragOver={(e) => e.preventDefault()}
+              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }}
+              onDrop={(e: DragEvent<HTMLDivElement>) => { e.preventDefault(); void selectHeaderFile(e.dataTransfer.files[0]); }}
+            >
+              <div
+                className="header-upload-preview"
+                style={{ "--preview-primary": f.accent, "--preview-secondary": f.accent2 } as CSSProperties}
+              >
+                {headerPreview ? (
+                  <img src={headerPreview} alt={f.headerImageAlt || `Vista previa de ${f.name || "la cabecera"}`} style={{ objectPosition: f.headerImagePosition }} />
+                ) : (
+                  <div className="header-upload-fallback"><IcImage width={24} height={24} /></div>
+                )}
+                <div className="header-upload-safe-zone">Zona limpia 55%</div>
+              </div>
+              <div className="header-upload-controls">
+                <div>
+                  <b>{headerPreview ? "Imagen lista" : "Arrastra una imagen aca"}</b>
+                  <p>1600 x 260 px - relacion 6.15:1 - PNG o WEBP - ideal menos de 500 KB</p>
+                  <p>Deja el 55% izquierdo limpio y concentra la identidad visual en el 45% derecho.</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  className="visually-hidden"
+                  type="file"
+                  accept="image/png,image/webp,.png,.webp"
+                  onChange={(e) => void selectHeaderFile(e.target.files?.[0])}
+                />
+                <div className="header-upload-buttons">
+                  <button type="button" className="btn btn-ghost" onClick={() => fileInputRef.current?.click()}>
+                    <IcUpload width={16} height={16} /> {headerPreview ? "Cambiar imagen" : "Subir imagen"}
+                  </button>
+                  {headerPreview && (
+                    <button type="button" className="btn btn-ghost danger-text" onClick={removeHeader}>
+                      <IcTrash width={16} height={16} /> Eliminar imagen
+                    </button>
+                  )}
+                </div>
+                {imageNote && <span className="image-note">{imageNote}</span>}
+              </div>
+            </div>
+            <div className="form-grid visual-options">
+              <Field label="Color principal">
+                <div className="color-field"><input className="color" type="color" value={f.accent} onChange={(e) => set("accent", e.target.value)} /><code>{f.accent}</code></div>
+              </Field>
+              <Field label="Color secundario">
+                <div className="color-field"><input className="color" type="color" value={f.accent2} onChange={(e) => set("accent2", e.target.value)} /><code>{f.accent2}</code></div>
+              </Field>
+              <Field label="Posicion de imagen">
+                <select value={f.headerImagePosition} onChange={(e) => set("headerImagePosition", e.target.value as FormState["headerImagePosition"])}>
+                  <option value="right">Derecha</option>
+                  <option value="center">Centro</option>
+                  <option value="left">Izquierda</option>
+                </select>
+              </Field>
+              <Field label="Texto alternativo" span2>
+                <input value={f.headerImageAlt} onChange={(e) => set("headerImageAlt", e.target.value)} placeholder={`${f.name || "Sistema"} - imagen de cabecera`} />
+              </Field>
+              <label className="image-toggle">
+                <input type="checkbox" checked={f.headerImageEnabled} disabled={!headerPreview} onChange={(e) => set("headerImageEnabled", e.target.checked)} />
+                Mostrar imagen en la card
+              </label>
+            </div>
+
+            {/* 3. Accesos y conexiones */}
             <div className="form-section">Accesos y conexiones</div>
             <div className="form-grid">
               <Field label="URL pública" span2>
