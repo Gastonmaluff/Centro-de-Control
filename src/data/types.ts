@@ -132,6 +132,7 @@ export interface System {
   headerImageAlt?: string;
   headerImagePosition?: "left" | "center" | "right";
   headerImageEnabled?: boolean;
+  headerImageIncludesLogo?: boolean;
   createdApprox?: string;
   links: SystemLinks;
   client?: ClientInfo;

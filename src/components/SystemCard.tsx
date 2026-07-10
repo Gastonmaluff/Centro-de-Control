@@ -50,6 +50,7 @@ export default function SystemCard({ sys }: { sys: System }) {
   const response = components.find((c) => c.key === "application")?.responseMs ?? mon?.responseMs;
   const techChecks = ["application", "domain", "backup"].flatMap((key) => components.find((c) => c.key === key) ?? []);
   const showHeaderImage = Boolean(sys.headerImageUrl && sys.headerImageEnabled !== false);
+  const headerIncludesLogo = showHeaderImage && sys.headerImageIncludesLogo === true;
 
   const handleDelete = async () => {
     setMenu(false);
@@ -75,18 +76,18 @@ export default function SystemCard({ sys }: { sys: System }) {
 
   return (
     <article className="syscard" style={style}>
-      <header className="sys-hero">
+      <header className={`sys-hero ${headerIncludesLogo ? "includes-logo" : ""}`}>
         {showHeaderImage && (
           <img
             className="sys-hero-image"
             src={sys.headerImageUrl}
             alt={sys.headerImageAlt || `${sys.name} - imagen de cabecera`}
-            style={{ objectPosition: sys.headerImagePosition ?? "right" }}
+            style={{ objectPosition: headerIncludesLogo ? "left center" : sys.headerImagePosition ?? "right" }}
           />
         )}
         <div className="sys-hero-wash" />
         <div className="sys-hero-content">
-          <div className="sys-glyph" aria-hidden="true">{sys.glyph}</div>
+          {!headerIncludesLogo && <div className="sys-glyph" aria-hidden="true">{sys.glyph}</div>}
           <div className="sys-title">
             <div className="sys-name">{sys.name}</div>
             <div className="sys-tag">{sys.description || projectStatusInfo[sys.projectStatus]}</div>

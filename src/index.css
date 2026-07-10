@@ -1046,6 +1046,32 @@ a {
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   backdrop-filter: blur(8px);
 }
+.sys-hero.includes-logo .sys-hero-wash {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    transparent 22%,
+    color-mix(in srgb, var(--surface) 54%, transparent) 34%,
+    color-mix(in srgb, var(--surface) 82%, transparent) 100%);
+}
+.sys-hero.includes-logo .sys-hero-content {
+  width: 100%;
+  padding-right: 132px;
+  grid-template-columns: minmax(280px, 28%) minmax(0, 1fr) auto;
+}
+.sys-hero.includes-logo .sys-title {
+  grid-column: 2;
+}
+.sys-hero.includes-logo .status-chip {
+  grid-column: 3;
+}
+.sys-hero.includes-logo .sys-name {
+  color: #172033;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
+}
+.sys-hero.includes-logo .sys-tag {
+  color: #596377;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
+}
 .sys-detail-btn {
   position: absolute;
   z-index: 2;
@@ -1303,12 +1329,16 @@ a {
 
 @media (max-width: 900px) {
   .sys-hero {
-    height: 104px;
-    min-height: 104px;
+    height: 110px;
+    min-height: 110px;
   }
   .sys-hero-content {
     width: 68%;
     padding: 14px 16px;
+  }
+  .sys-hero.includes-logo .sys-hero-content {
+    padding-right: 58px;
+    grid-template-columns: minmax(210px, 30%) minmax(0, 1fr) auto;
   }
   .syscard-body {
     grid-template-columns: 1fr;
@@ -1324,8 +1354,8 @@ a {
     border-radius: 10px;
   }
   .sys-hero {
-    height: 90px;
-    min-height: 90px;
+    height: 130px;
+    min-height: 130px;
   }
   .sys-hero-wash {
     background: linear-gradient(90deg, color-mix(in srgb, var(--surface) 96%, var(--acc)) 0%, color-mix(in srgb, var(--surface) 90%, var(--acc)) 55%, color-mix(in srgb, var(--surface) 40%, transparent) 100%);
@@ -1348,6 +1378,40 @@ a {
     grid-column: 2;
     justify-self: start;
     margin-top: -4px;
+  }
+  .sys-hero.includes-logo .sys-hero-wash {
+    background: linear-gradient(90deg,
+      transparent 0%,
+      transparent 29%,
+      color-mix(in srgb, var(--surface) 70%, transparent) 42%,
+      color-mix(in srgb, var(--surface) 88%, transparent) 100%);
+  }
+  .sys-hero.includes-logo .sys-hero-content {
+    width: 100%;
+    padding: 12px 48px 12px 8px;
+    grid-template-columns: minmax(150px, 42%) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 6px;
+  }
+  .sys-hero.includes-logo .sys-title {
+    grid-column: 2;
+    align-self: end;
+  }
+  .sys-hero.includes-logo .sys-name {
+    font-size: clamp(18px, 5.5vw, 22px);
+    line-height: 1.05;
+  }
+  .sys-hero.includes-logo .sys-tag {
+    font-size: clamp(13px, 3.6vw, 15px);
+    line-height: 1.2;
+    white-space: normal;
+  }
+  .sys-hero.includes-logo .status-chip {
+    grid-column: 2;
+    justify-self: start;
+    align-self: start;
+    margin-top: 0;
   }
   .sys-detail-btn {
     right: 9px;

@@ -24,6 +24,7 @@ type FormState = {
   headerImageAlt: string;
   headerImagePosition: "left" | "center" | "right";
   headerImageEnabled: boolean;
+  headerImageIncludesLogo: boolean;
   createdApprox: string;
   publicUrl: string;
   adminUrl: string;
@@ -53,6 +54,7 @@ function initState(s: System | null): FormState {
     headerImageAlt: s?.headerImageAlt ?? "",
     headerImagePosition: s?.headerImagePosition ?? "right",
     headerImageEnabled: s?.headerImageEnabled ?? Boolean(s?.headerImageUrl),
+    headerImageIncludesLogo: s?.headerImageIncludesLogo ?? false,
     createdApprox: s?.createdApprox ?? "",
     publicUrl: s?.links.publicUrl ?? "",
     adminUrl: s?.links.adminUrl ?? "",
@@ -157,8 +159,9 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       secondaryColor: f.accent2,
       headerImageUrl: headerRemoved ? "" : initial?.headerImageUrl ?? "",
       headerImageAlt: f.headerImageAlt.trim() || `${f.name.trim()} - imagen de cabecera`,
-      headerImagePosition: f.headerImagePosition,
+      headerImagePosition: f.headerImageIncludesLogo ? "left" : f.headerImagePosition,
       headerImageEnabled: f.headerImageEnabled && Boolean(headerPreview),
+      headerImageIncludesLogo: f.headerImageIncludesLogo && Boolean(headerPreview),
       links,
       ...clean({ description: f.description.trim(), createdApprox: f.createdApprox.trim() }),
     };
@@ -216,6 +219,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     setHeaderRemoved(true);
     setImageNote("Se eliminara al guardar los cambios.");
     set("headerImageEnabled", false);
+    set("headerImageIncludesLogo", false);
   };
 
   const persistHeader = async (systemId: string) => {
@@ -410,7 +414,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
                 style={{ "--preview-primary": f.accent, "--preview-secondary": f.accent2 } as CSSProperties}
               >
                 {headerPreview ? (
-                  <img src={headerPreview} alt={f.headerImageAlt || `Vista previa de ${f.name || "la cabecera"}`} style={{ objectPosition: f.headerImagePosition }} />
+                  <img src={headerPreview} alt={f.headerImageAlt || `Vista previa de ${f.name || "la cabecera"}`} style={{ objectPosition: f.headerImageIncludesLogo ? "left" : f.headerImagePosition }} />
                 ) : (
                   <div className="header-upload-fallback"><IcImage width={24} height={24} /></div>
                 )}
@@ -420,7 +424,9 @@ export default function SystemFormModal({ initial, onClose }: Props) {
                 <div>
                   <b>{headerPreview ? "Imagen lista" : "Arrastra una imagen aca"}</b>
                   <p>1600 x 260 px - relacion 6.15:1 - PNG o WEBP - ideal menos de 500 KB</p>
-                  <p>Deja el 55% izquierdo limpio y concentra la identidad visual en el 45% derecho.</p>
+                  <p>{f.headerImageIncludesLogo
+                    ? "El logo incorporado se conservara visible a la izquierda y el texto se ubicara a su derecha."
+                    : "Deja el 55% izquierdo limpio y concentra la identidad visual en el 45% derecho."}</p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -462,6 +468,22 @@ export default function SystemFormModal({ initial, onClose }: Props) {
               <label className="image-toggle">
                 <input type="checkbox" checked={f.headerImageEnabled} disabled={!headerPreview} onChange={(e) => set("headerImageEnabled", e.target.checked)} />
                 Mostrar imagen en la card
+              </label>
+              <label className="image-toggle">
+                <input
+                  type="checkbox"
+                  checked={f.headerImageIncludesLogo}
+                  disabled={!headerPreview}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setF((previous) => ({
+                      ...previous,
+                      headerImageIncludesLogo: checked,
+                      headerImagePosition: checked ? "left" : previous.headerImagePosition,
+                    }));
+                  }}
+                />
+                La imagen de cabecera ya incluye el logo
               </label>
             </div>
 
