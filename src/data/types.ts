@@ -133,6 +133,10 @@ export interface System {
   headerImagePosition?: "left" | "center" | "right";
   headerImageEnabled?: boolean;
   headerImageIncludesLogo?: boolean;
+  /** Ajuste visual no destructivo de la imagen de cabecera. */
+  headerImageZoom?: number; // >= 1 (1 = sin acercar)
+  headerImageOffsetX?: number; // object-position X en % (0..100, 50 = centro)
+  headerImageOffsetY?: number; // object-position Y en % (0..100, 50 = centro)
   createdApprox?: string;
   links: SystemLinks;
   client?: ClientInfo;

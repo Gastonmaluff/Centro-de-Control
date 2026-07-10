@@ -6,7 +6,9 @@ import { useSystemsCtx } from "../context/SystemsContext";
 import { fetchLastCommit } from "../lib/github";
 import { checkUrl } from "../lib/monitoring";
 import { deleteSystemHeader, uploadSystemHeader } from "../firebase/storage";
-import { IcCheck, IcImage, IcPlus, IcTrash, IcUpload } from "./icons";
+import { headerAdjustFrom, headerImageStyle, type HeaderAdjust } from "../lib/headerImage";
+import HeaderImageAdjust from "./HeaderImageAdjust";
+import { IcCheck, IcCrop, IcImage, IcPlus, IcTrash, IcUpload } from "./icons";
 
 interface Props {
   initial: System | null;
@@ -117,6 +119,8 @@ export default function SystemFormModal({ initial, onClose }: Props) {
   const [headerRemoved, setHeaderRemoved] = useState(false);
   const [imageNote, setImageNote] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [headerAdjust, setHeaderAdjust] = useState<HeaderAdjust>(() => headerAdjustFrom(initial ?? {}));
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -162,6 +166,9 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       headerImagePosition: f.headerImageIncludesLogo ? "left" : f.headerImagePosition,
       headerImageEnabled: f.headerImageEnabled && Boolean(headerPreview),
       headerImageIncludesLogo: f.headerImageIncludesLogo && Boolean(headerPreview),
+      headerImageZoom: headerAdjust.zoom,
+      headerImageOffsetX: headerAdjust.offsetX,
+      headerImageOffsetY: headerAdjust.offsetY,
       links,
       ...clean({ description: f.description.trim(), createdApprox: f.createdApprox.trim() }),
     };
@@ -200,6 +207,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     setHeaderPreview(preview);
     setHeaderRemoved(false);
     set("headerImageEnabled", true);
+    setHeaderAdjust({ zoom: 1, offsetX: 50, offsetY: 50 });
     setError("");
 
     const weight = `${Math.round(file.size / 1024)} KB`;
@@ -414,7 +422,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
                 style={{ "--preview-primary": f.accent, "--preview-secondary": f.accent2 } as CSSProperties}
               >
                 {headerPreview ? (
-                  <img src={headerPreview} alt={f.headerImageAlt || `Vista previa de ${f.name || "la cabecera"}`} style={{ objectPosition: f.headerImageIncludesLogo ? "left" : f.headerImagePosition }} />
+                  <img src={headerPreview} alt={f.headerImageAlt || `Vista previa de ${f.name || "la cabecera"}`} style={headerImageStyle(headerAdjust)} />
                 ) : (
                   <div className="header-upload-fallback"><IcImage width={24} height={24} /></div>
                 )}
@@ -423,10 +431,12 @@ export default function SystemFormModal({ initial, onClose }: Props) {
               <div className="header-upload-controls">
                 <div>
                   <b>{headerPreview ? "Imagen lista" : "Arrastra una imagen aca"}</b>
-                  <p>1600 x 260 px - relacion 6.15:1 - PNG o WEBP - ideal menos de 500 KB</p>
-                  <p>{f.headerImageIncludesLogo
+                  <p>Recomendado 1800 x 600 px o similar - PNG o WEBP - ideal menos de 500 KB</p>
+                  <p>{headerPreview
+                    ? "El sistema recorta la imagen dentro de la cabecera. Usa “Ajustar imagen” para acomodarla (mover y zoom)."
+                    : f.headerImageIncludesLogo
                     ? "El logo incorporado se conservara visible a la izquierda y el texto se ubicara a su derecha."
-                    : "Deja el 55% izquierdo limpio y concentra la identidad visual en el 45% derecho."}</p>
+                    : "Podes subir una imagen mas grande; despues la ajustas visualmente dentro de la cabecera."}</p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -439,6 +449,11 @@ export default function SystemFormModal({ initial, onClose }: Props) {
                   <button type="button" className="btn btn-ghost" onClick={() => fileInputRef.current?.click()}>
                     <IcUpload width={16} height={16} /> {headerPreview ? "Cambiar imagen" : "Subir imagen"}
                   </button>
+                  {headerPreview && (
+                    <button type="button" className="btn btn-ghost" onClick={() => setAdjustOpen(true)}>
+                      <IcCrop width={16} height={16} /> Ajustar imagen
+                    </button>
+                  )}
                   {headerPreview && (
                     <button type="button" className="btn btn-ghost danger-text" onClick={removeHeader}>
                       <IcTrash width={16} height={16} /> Eliminar imagen
@@ -456,7 +471,14 @@ export default function SystemFormModal({ initial, onClose }: Props) {
                 <div className="color-field"><input className="color" type="color" value={f.accent2} onChange={(e) => set("accent2", e.target.value)} /><code>{f.accent2}</code></div>
               </Field>
               <Field label="Posicion de imagen">
-                <select value={f.headerImagePosition} onChange={(e) => set("headerImagePosition", e.target.value as FormState["headerImagePosition"])}>
+                <select
+                  value={f.headerImagePosition}
+                  onChange={(e) => {
+                    const pos = e.target.value as FormState["headerImagePosition"];
+                    set("headerImagePosition", pos);
+                    setHeaderAdjust((a) => ({ ...a, offsetX: pos === "left" ? 0 : pos === "center" ? 50 : 100 }));
+                  }}
+                >
                   <option value="right">Derecha</option>
                   <option value="center">Centro</option>
                   <option value="left">Izquierda</option>
@@ -481,6 +503,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
                       headerImageIncludesLogo: checked,
                       headerImagePosition: checked ? "left" : previous.headerImagePosition,
                     }));
+                    if (checked) setHeaderAdjust((a) => ({ ...a, offsetX: 0 }));
                   }}
                 />
                 La imagen de cabecera ya incluye el logo
@@ -556,6 +579,20 @@ export default function SystemFormModal({ initial, onClose }: Props) {
               </button>
             </div>
           </form>
+        )}
+        {adjustOpen && headerPreview && (
+          <HeaderImageAdjust
+            imageUrl={headerPreview}
+            alt={f.headerImageAlt || f.name}
+            primary={f.accent}
+            secondary={f.accent2}
+            value={headerAdjust}
+            onSave={(a) => {
+              setHeaderAdjust(a);
+              setAdjustOpen(false);
+            }}
+            onCancel={() => setAdjustOpen(false)}
+          />
         )}
       </div>
     </div>

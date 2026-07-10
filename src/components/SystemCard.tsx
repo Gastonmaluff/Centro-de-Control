@@ -4,6 +4,7 @@ import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus, projectStatusInfo, statusInfo } from "../lib/status";
 import { componentStateInfo, getTechnicalComponents } from "../lib/technical";
 import { dateTime, hrefs, money, timeAgo } from "../lib/format";
+import { headerAdjustFrom, headerImageStyle } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
 import { runMonitorSystem } from "../lib/monitoring";
@@ -82,7 +83,7 @@ export default function SystemCard({ sys }: { sys: System }) {
             className="sys-hero-image"
             src={sys.headerImageUrl}
             alt={sys.headerImageAlt || `${sys.name} - imagen de cabecera`}
-            style={{ objectPosition: headerIncludesLogo ? "left center" : sys.headerImagePosition ?? "right" }}
+            style={headerImageStyle(headerAdjustFrom(sys))}
           />
         )}
         <div className="sys-hero-wash" />
