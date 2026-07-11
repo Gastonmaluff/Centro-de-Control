@@ -539,8 +539,10 @@ async function checkBackupDoc(docRef: FirebaseFirestore.DocumentReference): Prom
   await docRef.set(
     {
       backupHealth: health,
-      "monitoring.components.backup": backupComponent,
-      "monitoring.backup": backupComponent,
+      monitoring: {
+        components: { backup: backupComponent },
+        backup: backupComponent,
+      },
       updatedAt: new Date().toISOString(),
     },
     { merge: true }

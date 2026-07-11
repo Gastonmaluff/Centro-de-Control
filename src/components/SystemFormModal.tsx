@@ -4,7 +4,7 @@ import type { SystemInput } from "../firebase/systems";
 import { patchSystem } from "../firebase/systems";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { fetchLastCommit } from "../lib/github";
-import { checkBackupNow, checkUrl } from "../lib/monitoring";
+import { backupErrorMessage, backupHealthMessage, checkBackupNow, checkUrl } from "../lib/monitoring";
 import { deleteSystemHeader, uploadSystemHeader } from "../firebase/storage";
 import { headerAdjustFrom, headerImageStyle, type HeaderAdjust } from "../lib/headerImage";
 import HeaderImageAdjust from "./HeaderImageAdjust";
@@ -359,9 +359,19 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     try {
       await saveSystem(initial.id, buildInput());
       const health = await checkBackupNow(initial.id);
-      setBackupCheckMessage(`${health.message} - ${health.checkedAt ? new Date(health.checkedAt).toLocaleString() : "verificado"}`);
-    } catch {
-      setBackupCheckMessage("No se pudo verificar. Revisá permisos, proyecto y despliegue de Functions.");
+      console.info("checkBackupNow result", { systemId: initial.id, health });
+      const details = [
+        backupHealthMessage(health),
+        `estado: ${health.status}`,
+        `conexion: ${health.connectionStatus}`,
+        health.scheduleType ? `frecuencia: ${health.scheduleType}` : null,
+        health.latestBackupState ? `ultimo backup: ${health.latestBackupState}` : null,
+        health.checkedAt ? `verificado: ${new Date(health.checkedAt).toLocaleString()}` : null,
+      ].filter(Boolean);
+      setBackupCheckMessage(details.join(" - "));
+    } catch (err) {
+      console.error("checkBackupNow failed", { systemId: initial.id, error: err });
+      setBackupCheckMessage(backupErrorMessage(err));
     } finally {
       setBackupChecking(false);
     }
@@ -595,7 +605,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
               </Field>
               <div className="backup-verify span2">
                 <button type="button" className="btn btn-ghost" onClick={verifyBackupConnection} disabled={backupChecking || f.backupProvider !== "firestore"}>
-                  {backupChecking ? "Verificando..." : "Verificar conexion"}
+                  {backupChecking ? "Verificando backup..." : "Verificar conexion"}
                 </button>
                 <div className="backup-verify-meta">
                   <span>Ultima verificacion: {initial?.backupHealth?.checkedAt ? new Date(initial.backupHealth.checkedAt).toLocaleString() : "Sin comprobar"}</span>

@@ -7,7 +7,7 @@ import { dateTime, hrefs, money, timeAgo } from "../lib/format";
 import { headerAdjustFrom, headerImageStyle } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
-import { checkBackupNow, runMonitorSystem } from "../lib/monitoring";
+import { backupErrorMessage, backupHealthMessage, checkBackupNow, runMonitorSystem } from "../lib/monitoring";
 import {
   IcCloud,
   IcChevronDown,
@@ -31,6 +31,7 @@ export default function SystemCard({ sys }: { sys: System }) {
   const [menu, setMenu] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [backupChecking, setBackupChecking] = useState(false);
+  const [backupNotice, setBackupNotice] = useState<{ tone: "ok" | "warn" | "down" | "pending"; text: string } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,8 +83,15 @@ export default function SystemCard({ sys }: { sys: System }) {
   const handleBackupCheck = async () => {
     setMenu(false);
     setBackupChecking(true);
+    setBackupNotice({ tone: "pending", text: "Verificando backup..." });
     try {
-      await checkBackupNow(sys.id);
+      const health = await checkBackupNow(sys.id);
+      const tone = health.status === "healthy" ? "ok" : health.status === "error" ? "down" : health.status === "connection_required" ? "pending" : "warn";
+      setBackupNotice({ tone, text: backupHealthMessage(health) });
+      console.info("checkBackupNow result", { systemId: sys.id, health });
+    } catch (err) {
+      console.error("checkBackupNow failed", { systemId: sys.id, error: err });
+      setBackupNotice({ tone: "down", text: backupErrorMessage(err) });
     } finally {
       setBackupChecking(false);
     }
@@ -120,6 +128,11 @@ export default function SystemCard({ sys }: { sys: System }) {
       <div className="syscard-body">
         <section className="sys-tech" aria-label="Estado tecnico">
           <span className="sys-block-label">Estado tecnico</span>
+          {backupNotice && (
+            <div className={`backup-inline-alert ${backupNotice.tone}`} role={backupNotice.tone === "down" ? "alert" : "status"}>
+              {backupNotice.text}
+            </div>
+          )}
           <div className="sys-tech-grid">
             {techChecks.map((check) => (
               <TechCheck key={check.key} check={check} />
@@ -166,7 +179,7 @@ export default function SystemCard({ sys }: { sys: System }) {
                   <button onClick={() => { setMenu(false); openTodos(sys); }}><IcTasks width={15} height={15} /> Ver pendientes</button>
                   <button onClick={handleReanalyze} disabled={reanalyzing || backupChecking}><IcRefresh width={15} height={15} /> {reanalyzing ? "Reanalizando" : "Reanalizar"}</button>
                   <button onClick={handleBackupCheck} disabled={backupChecking || sys.backupConfig?.provider !== "firestore"}>
-                    <IcCloud width={15} height={15} /> {backupChecking ? "Verificando backup" : "Verificar backup"}
+                    <IcCloud width={15} height={15} /> {backupChecking ? "Verificando backup..." : "Verificar backup"}
                   </button>
                   <button className="danger" onClick={handleDelete}><IcTrash width={15} height={15} /> Eliminar</button>
                 </div>

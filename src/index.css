@@ -2624,6 +2624,35 @@ a {
   border-top: 1px solid var(--border);
 }
 
+.backup-inline-alert {
+  margin: 4px 0 9px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 650;
+}
+.backup-inline-alert.ok {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 28%, var(--border));
+  background: var(--ok-weak);
+}
+.backup-inline-alert.warn {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 30%, var(--border));
+  background: var(--warn-weak);
+}
+.backup-inline-alert.down {
+  color: var(--down);
+  border-color: color-mix(in srgb, var(--down) 30%, var(--border));
+  background: var(--down-weak);
+}
+.backup-inline-alert.pending {
+  color: var(--pending);
+  border-color: color-mix(in srgb, var(--pending) 30%, var(--border));
+  background: var(--pending-weak);
+}
+
 @media (max-width: 560px) {
   .form-grid {
     grid-template-columns: repeat(2, 1fr);
