@@ -1165,6 +1165,9 @@ a {
 .sys-tech-grid > .tech-column + .tech-column {
   border-left: 1px solid var(--border);
 }
+.sys-tech-grid > .tech-column:nth-child(2) {
+  padding-left: 18px;
+}
 .sys-tech-grid > .tech-column:first-child {
   padding-left: 0;
 }
