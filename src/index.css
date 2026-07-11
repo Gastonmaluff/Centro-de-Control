@@ -2810,8 +2810,8 @@ a {
 }
 
 .backup-modal {
-  width: min(680px, 100%);
-  max-height: min(88vh, 780px);
+  width: min(650px, 100%);
+  max-height: min(92vh, 720px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -2827,12 +2827,12 @@ a {
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
-  padding: 18px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
 }
 .backup-head-icon {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   border-radius: var(--r-md);
@@ -2841,7 +2841,7 @@ a {
 }
 .backup-head-titles h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16.5px;
   font-weight: 750;
   letter-spacing: -0.01em;
 }
@@ -2923,22 +2923,22 @@ a {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px 20px;
+  gap: 10px;
+  padding: 12px 16px;
 }
 .backup-state-card {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 11px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border: 1px solid transparent;
   border-radius: var(--r-md);
 }
 .backup-state-ic {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border-radius: 999px;
@@ -2947,27 +2947,27 @@ a {
 }
 .backup-state-card b {
   display: block;
-  margin-bottom: 2px;
-  font-size: 14px;
+  margin-bottom: 1px;
+  font-size: 13.5px;
   color: var(--text);
 }
 .backup-state-card p {
   margin: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-muted);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 .backup-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 .backup-detail-item {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 12px;
+  gap: 10px;
+  padding: 8px 10px;
   border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
   border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--surface-2) 65%, var(--surface));
@@ -2977,11 +2977,11 @@ a {
 }
 .bd-ic {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-muted);
@@ -2990,11 +2990,11 @@ a {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 .bd-label {
   color: var(--text-faint);
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3003,19 +3003,19 @@ a {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 650;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 .backup-modal-result {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 .backup-modal-foot {
@@ -3026,47 +3026,57 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 14px 20px;
+  padding: 12px 16px;
 }
-/* Franja institucional inferior */
+/* Franja institucional inferior: limpia, sobre la superficie del modal (sin caja gris) */
 .backup-brands {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 14px 20px 16px;
-  background: #f6f7f9;
-  border-top: 1px solid #e9ebf0;
+  padding: 11px 18px 14px;
+  border-top: 1px solid var(--border);
 }
 .backup-brands-caption {
-  font-size: 11px;
-  font-weight: 650;
+  font-size: 10.5px;
+  font-weight: 600;
   letter-spacing: 0.02em;
-  color: #7b8494;
+  color: var(--text-faint);
   text-align: center;
 }
 .backup-brands-logos {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 20px;
   flex-wrap: wrap;
 }
-.brand-logo {
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-mark {
   display: block;
   width: auto;
   flex: 0 0 auto;
 }
-.brand-firebase {
+.brand-mark-firebase {
   height: 20px;
 }
-.brand-gcloud {
-  height: 17px;
+.brand-mark-gcloud {
+  height: 19px;
+}
+.brand-name {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text-muted);
 }
 .brand-divider {
   width: 1px;
-  height: 18px;
-  background: #d7dbe3;
+  height: 20px;
+  background: var(--border);
 }
 .form-section {
   font-size: 11px;

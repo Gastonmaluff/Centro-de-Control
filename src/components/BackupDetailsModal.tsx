@@ -5,8 +5,8 @@ import { backupErrorMessage, backupHealthMessage, checkBackupNow } from "../lib/
 import { backupScheduleLabel, backupStatusLabel, backupTone, googleCloudBackupUrl, retentionDays } from "../lib/backups";
 import { dateTime } from "../lib/format";
 import { IcAlert, IcCheck, IcCloud, IcDatabase, IcExternal, IcFirebase, IcPlus, IcRefresh, IcSave, IcServer } from "./icons";
-import firebaseLogo from "../assets/firebase-logo.svg";
-import googleCloudLogo from "../assets/google-cloud-logo.svg";
+import firebaseMark from "../assets/firebase-mark.svg";
+import googleCloudMark from "../assets/google-cloud-mark.svg";
 
 interface Props {
   system: System;
@@ -158,9 +158,15 @@ export default function BackupDetailsModal({ system, onClose }: Props) {
           <div className="backup-brands">
             <span className="backup-brands-caption">Servicio de respaldo potenciado por</span>
             <div className="backup-brands-logos">
-              <img className="brand-logo brand-firebase" src={firebaseLogo} alt="Firebase" />
+              <span className="brand" aria-label="Firebase">
+                <img className="brand-mark brand-mark-firebase" src={firebaseMark} alt="" aria-hidden="true" />
+                <span className="brand-name">Firebase</span>
+              </span>
               <span className="brand-divider" aria-hidden="true" />
-              <img className="brand-logo brand-gcloud" src={googleCloudLogo} alt="Google Cloud" />
+              <span className="brand" aria-label="Google Cloud">
+                <img className="brand-mark brand-mark-gcloud" src={googleCloudMark} alt="" aria-hidden="true" />
+                <span className="brand-name">Google Cloud</span>
+              </span>
             </div>
           </div>
         </footer>
