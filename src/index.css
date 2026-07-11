@@ -1190,6 +1190,9 @@ a {
   border-color: transparent;
   background: transparent;
 }
+.sys-tech-grid > .tech-column + .tech-column {
+  border-left: 1px solid var(--border);
+}
 .sys-tech-grid .tech-column-stack .tech-check {
   min-height: 0;
   align-content: center;
