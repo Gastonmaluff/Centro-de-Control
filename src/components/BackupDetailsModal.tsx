@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { BackupHealth, System } from "../data/types";
 import { backupErrorMessage, backupHealthMessage, checkBackupNow } from "../lib/monitoring";
 import { backupScheduleLabel, backupStatusLabel, backupTone, googleCloudBackupUrl, retentionDays } from "../lib/backups";
 import { dateTime } from "../lib/format";
-import { IcCheck, IcCloud, IcExternal, IcPlus, IcRefresh } from "./icons";
+import { IcAlert, IcCheck, IcCloud, IcDatabase, IcExternal, IcFirebase, IcPlus, IcRefresh, IcSave, IcServer } from "./icons";
+import firebaseLogo from "../assets/firebase-logo.svg";
+import googleCloudLogo from "../assets/google-cloud-logo.svg";
 
 interface Props {
   system: System;
@@ -26,6 +28,13 @@ function stateDescription(health?: BackupHealth) {
   if (health.status === "not_configured") return "No existe una programacion de backup detectada.";
   if (health.status === "connection_required") return "Falta completar la conexion o permisos de Google Cloud.";
   return health.message || "Centro de Control no pudo confirmar la salud completa del backup.";
+}
+
+/** Icono del bloque resumen segun el estado (mismo cálculo de tono existente). */
+function summaryIcon(tone: string) {
+  if (tone === "ok") return <IcCheck width={18} height={18} />;
+  if (tone === "warn" || tone === "down") return <IcAlert width={18} height={18} />;
+  return <IcCloud width={18} height={18} />;
 }
 
 export default function BackupDetailsModal({ system, onClose }: Props) {
@@ -64,29 +73,30 @@ export default function BackupDetailsModal({ system, onClose }: Props) {
     }
   };
 
-  const rows = [
-    ["Estado general", health ? backupStatusLabel(health.status) : "Todavia no se verifico"],
-    ["Mensaje tecnico", health?.message || missing],
-    ["Ultimo backup exitoso", safeDate(health?.latestSnapshotTime, "Todavia no se verifico")],
-    ["Estado del ultimo backup", health?.latestBackupState || missing],
-    ["Frecuencia", backupScheduleLabel(health?.scheduleType)],
-    ["Retencion", retentionDays(health?.retentionSeconds)],
-    ["Fecha de vencimiento", safeDate(health?.latestExpireTime)],
-    ["Ultima verificacion", safeDate(health?.checkedAt, "Todavia no se verifico")],
-    ["Proyecto Google Cloud", system.backupConfig?.projectId || missing],
-    ["Base Firestore", system.backupConfig?.databaseId || "(default)"],
-    ["Fuente", health?.source || missing],
-    ...(health && health.consecutiveFailures > 0 ? [["Errores consecutivos", String(health.consecutiveFailures)]] : []),
+  // Los valores siguen siendo dinámicos y provienen de los datos reales del sistema.
+  const items: { label: string; value: string; icon: ReactNode; full?: boolean }[] = [
+    { label: "Ultimo backup exitoso", value: safeDate(health?.latestSnapshotTime, "Todavia no se verifico"), icon: <IcSave width={15} height={15} /> },
+    { label: "Estado del ultimo backup", value: health?.latestBackupState || missing, icon: <IcServer width={15} height={15} /> },
+    { label: "Frecuencia", value: backupScheduleLabel(health?.scheduleType), icon: <IcRefresh width={15} height={15} /> },
+    { label: "Retencion", value: retentionDays(health?.retentionSeconds), icon: <IcDatabase width={15} height={15} /> },
+    { label: "Fecha de vencimiento", value: safeDate(health?.latestExpireTime), icon: <IcAlert width={15} height={15} /> },
+    { label: "Ultima verificacion", value: safeDate(health?.checkedAt, "Todavia no se verifico"), icon: <IcCheck width={15} height={15} /> },
+    { label: "Proyecto Google Cloud", value: system.backupConfig?.projectId || missing, icon: <IcCloud width={15} height={15} /> },
+    { label: "Base Firestore", value: system.backupConfig?.databaseId || "(default)", icon: <IcFirebase width={15} height={15} /> },
+    ...(health && health.consecutiveFailures > 0
+      ? [{ label: "Errores consecutivos", value: String(health.consecutiveFailures), icon: <IcAlert width={15} height={15} /> }]
+      : []),
+    { label: "Fuente", value: health?.source || missing, icon: <IcServer width={15} height={15} />, full: true },
   ];
 
   return createPortal(
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="backup-modal" role="dialog" aria-modal="true" aria-labelledby="backup-modal-title" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="backup-modal-head">
-          <div className="backup-head-icon">
+        <header className="backup-modal-head">
+          <span className="backup-head-icon" aria-hidden="true">
             <IcCloud width={22} height={22} />
-          </div>
-          <div>
+          </span>
+          <div className="backup-head-titles">
             <h3 id="backup-modal-title">Estado del backup</h3>
             <p>{system.name}</p>
           </div>
@@ -94,49 +104,66 @@ export default function BackupDetailsModal({ system, onClose }: Props) {
             <span className={`check-dot ${tone}`} />
             {backupStatusLabel(health?.status)}
           </span>
-          <button className="icon-btn" onClick={onClose} title="Cerrar" aria-label="Cerrar detalle de backup">
+          <button className="backup-close" onClick={onClose} title="Cerrar" aria-label="Cerrar detalle de backup">
             <IcPlus width={18} height={18} style={{ transform: "rotate(45deg)" }} />
           </button>
-        </div>
+        </header>
 
-        <div className={`backup-state-card ${tone}`}>
-          <span className={`check-dot ${tone}`} />
-          <div>
-            <b>{backupStatusLabel(health?.status)}</b>
-            <p>{stateDescription(health)}</p>
-          </div>
-        </div>
-
-        <div className="backup-detail-grid">
-          {rows.map(([label, value]) => (
-            <div className="backup-detail-item" key={label}>
-              <span>{label}</span>
-              <b>{value}</b>
+        <div className="backup-modal-body">
+          <div className={`backup-state-card ${tone}`}>
+            <span className="backup-state-ic" aria-hidden="true">{summaryIcon(tone)}</span>
+            <div>
+              <b>{backupStatusLabel(health?.status)}</b>
+              <p>{stateDescription(health)}</p>
             </div>
-          ))}
-        </div>
-
-        {resultMessage && (
-          <div className={`backup-modal-result ${checking ? "pending" : tone}`} role={tone === "down" ? "alert" : "status"}>
-            {checking ? <span className="spinner" /> : <IcCheck width={14} height={14} />}
-            {resultMessage}
           </div>
-        )}
 
-        <div className="backup-modal-actions">
-          <button className="btn btn-primary" type="button" onClick={verifyNow} disabled={checking || system.backupConfig?.provider !== "firestore"}>
-            <IcRefresh width={16} height={16} /> {checking ? "Verificando..." : "Verificar ahora"}
-          </button>
-          {cloudUrl ? (
-            <a className="btn btn-ghost" href={cloudUrl} target="_blank" rel="noreferrer">
-              <IcExternal width={16} height={16} /> Abrir en Google Cloud
-            </a>
-          ) : (
-            <span className="btn btn-ghost disabled-like">
-              <IcExternal width={16} height={16} /> Abrir en Google Cloud
-            </span>
+          <div className="backup-detail-grid">
+            {items.map((item) => (
+              <div className={`backup-detail-item ${item.full ? "span2" : ""}`} key={item.label}>
+                <span className="bd-ic" aria-hidden="true">{item.icon}</span>
+                <span className="bd-text">
+                  <span className="bd-label">{item.label}</span>
+                  <b className="bd-value">{item.value}</b>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {resultMessage && (
+            <div className={`backup-modal-result ${checking ? "pending" : tone}`} role={tone === "down" ? "alert" : "status"}>
+              {checking ? <span className="spinner" /> : <IcCheck width={14} height={14} />}
+              {resultMessage}
+            </div>
           )}
         </div>
+
+        <footer className="backup-modal-foot">
+          <div className="backup-modal-actions">
+            <button className="btn btn-primary" type="button" onClick={verifyNow} disabled={checking || system.backupConfig?.provider !== "firestore"}>
+              {checking ? <span className="spinner" /> : <IcRefresh width={16} height={16} />}
+              {checking ? "Verificando..." : "Verificar ahora"}
+            </button>
+            {cloudUrl ? (
+              <a className="btn btn-ghost" href={cloudUrl} target="_blank" rel="noreferrer">
+                <IcExternal width={16} height={16} /> Abrir en Google Cloud
+              </a>
+            ) : (
+              <span className="btn btn-ghost disabled-like">
+                <IcExternal width={16} height={16} /> Abrir en Google Cloud
+              </span>
+            )}
+          </div>
+
+          <div className="backup-brands">
+            <span className="backup-brands-caption">Servicio de respaldo potenciado por</span>
+            <div className="backup-brands-logos">
+              <img className="brand-logo brand-firebase" src={firebaseLogo} alt="Firebase" />
+              <span className="brand-divider" aria-hidden="true" />
+              <img className="brand-logo brand-gcloud" src={googleCloudLogo} alt="Google Cloud" />
+            </div>
+          </div>
+        </footer>
       </div>
     </div>,
     document.body
