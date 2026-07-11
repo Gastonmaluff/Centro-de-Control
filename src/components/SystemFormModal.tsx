@@ -586,6 +586,9 @@ export default function SystemFormModal({ initial, onClose }: Props) {
             alt={f.headerImageAlt || f.name}
             primary={f.accent}
             secondary={f.accent2}
+            glyph={f.glyph}
+            name={f.name}
+            includesLogo={f.headerImageIncludesLogo}
             value={headerAdjust}
             onSave={(a) => {
               setHeaderAdjust(a);

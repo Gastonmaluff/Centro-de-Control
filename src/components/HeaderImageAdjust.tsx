@@ -14,17 +14,57 @@ interface Props {
   alt?: string;
   primary: string;
   secondary: string;
+  glyph?: string;
+  name?: string;
+  includesLogo?: boolean;
   value: HeaderAdjust;
   onSave: (a: HeaderAdjust) => void;
   onCancel: () => void;
 }
 
-export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, value, onSave, onCancel }: Props) {
+function initials(s?: string) {
+  return (s || "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+/** Proporción real de la cabecera de una card (ancho/alto), medida en vivo. */
+function measureHeroAspect(): number {
+  const hero = document.querySelector(".syscard .sys-hero");
+  if (hero) {
+    const r = hero.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return r.width / r.height;
+  }
+  return 6.4; // fallback razonable si no hay cards en pantalla
+}
+
+export default function HeaderImageAdjust({
+  imageUrl,
+  alt,
+  primary,
+  secondary,
+  glyph,
+  name,
+  includesLogo,
+  value,
+  onSave,
+  onCancel,
+}: Props) {
   const [adjust, setAdjust] = useState<HeaderAdjust>(value);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+  const [aspect, setAspect] = useState<number>(6.4);
   const frameRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+
+  // Igualar la proporción del preview a la cabecera real -> WYSIWYG.
+  useEffect(() => {
+    setAspect(measureHeroAspect());
+  }, []);
 
   // Imágenes cacheadas pueden no disparar onLoad: leer el tamaño si ya está lista.
   useEffect(() => {
@@ -36,7 +76,7 @@ export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, v
 
   const { zoom, offsetX, offsetY } = adjust;
   const imgStyle = headerImageStyle(adjust);
-  const gradient = `linear-gradient(112deg, ${primary}, ${secondary})`;
+  const displayGlyph = glyph?.trim() || initials(name) || "SC";
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     try {
@@ -77,6 +117,13 @@ export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, v
   const center = () => setAdjust((a) => ({ ...a, offsetX: 50, offsetY: 50 }));
   const reset = () => setAdjust({ zoom: 1, offsetX: 50, offsetY: 50 });
 
+  const frameStyle = {
+    "--acc": primary,
+    "--acc2": secondary,
+    aspectRatio: aspect,
+    touchAction: "none",
+  } as CSSProperties;
+
   return (
     <div className="modal-overlay hia-overlay" onMouseDown={onCancel}>
       <div className="modal hia-modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -84,7 +131,7 @@ export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, v
           <div>
             <h3>Ajustar imagen</h3>
             <p className="muted" style={{ fontSize: 12.5, margin: "2px 0 0" }}>
-              Arrastrá la imagen y usá el zoom. Se guarda solo el ajuste; la imagen original no se recorta.
+              Así se verá exactamente en la card. Arrastrá la imagen y usá el zoom.
             </p>
           </div>
           <button className="icon-btn" onClick={onCancel} title="Cerrar" aria-label="Cerrar">
@@ -93,11 +140,11 @@ export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, v
         </div>
 
         <div className="modal-body">
-          {/* Preview grande = marco del área visible final */}
+          {/* Preview = réplica exacta de la cabecera de la card (misma proporción, degradado y texto). */}
           <div
             ref={frameRef}
-            className="hia-frame"
-            style={{ background: gradient, touchAction: "none" }}
+            className={`sys-hero hia-frame ${includesLogo ? "includes-logo" : ""}`}
+            style={frameStyle}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
@@ -105,14 +152,24 @@ export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, v
           >
             <img
               ref={imgRef}
-              className="hia-img"
+              className="sys-hero-image"
               src={imageUrl}
               alt={alt || "Imagen de cabecera"}
               draggable={false}
               style={imgStyle}
               onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
             />
-            <div className="hia-grid" aria-hidden="true" />
+            <div className="sys-hero-wash" />
+            <div className="sys-hero-content">
+              {!includesLogo && <div className="sys-glyph" aria-hidden="true">{displayGlyph}</div>}
+              <div className="sys-title">
+                <div className="sys-name">{name || "Sistema"}</div>
+                <div className="sys-tag">Vista previa</div>
+              </div>
+              <span className="status-chip ok">
+                <span className="led ok" /> Operativo
+              </span>
+            </div>
             <span className="hia-hint">Arrastrá para reposicionar</span>
           </div>
 
@@ -146,18 +203,6 @@ export default function HeaderImageAdjust({ imageUrl, alt, primary, secondary, v
                 <span>Vertical</span>
                 <input type="range" min={0} max={100} step={1} value={offsetY} onChange={(e) => setAdjust((a) => ({ ...a, offsetY: clampOffset(Number(e.target.value)) }))} />
               </label>
-            </div>
-
-            <div className="hia-mini-wrap">
-              <span className="muted" style={{ fontSize: 11 }}>Vista de la card</span>
-              <div className="hia-mini" style={{ "--acc": primary, "--acc2": secondary } as CSSProperties}>
-                <div className="hia-mini-hero" style={{ background: gradient }}>
-                  <img src={imageUrl} alt="" draggable={false} style={imgStyle} />
-                  <div className="hia-mini-wash" />
-                  <span className="hia-mini-title">{alt?.split(" - ")[0] || "Sistema"}</span>
-                </div>
-                <div className="hia-mini-body" />
-              </div>
             </div>
           </div>
         </div>

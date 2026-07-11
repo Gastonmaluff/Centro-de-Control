@@ -1474,39 +1474,25 @@ a {
 .hia-modal {
   max-width: 640px;
 }
-.hia-frame {
-  position: relative;
+/* El marco reutiliza .sys-hero (misma proporción, degradado y texto que la card).
+   Anulamos su altura fija para respetar la relación de aspecto medida en vivo. */
+.hia-frame.sys-hero {
+  height: auto;
+  min-height: 0;
   width: 100%;
-  aspect-ratio: 4 / 1;
   border-radius: var(--r-md);
-  overflow: hidden;
   cursor: grab;
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--brand) 55%, transparent),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   touch-action: none;
   user-select: none;
 }
-.hia-frame:active {
+.hia-frame.sys-hero:active {
   cursor: grabbing;
 }
-.hia-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+/* Todo el marco es arrastrable: los hijos no capturan el puntero. */
+.hia-frame > * {
   pointer-events: none;
-  user-select: none;
-}
-.hia-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px);
-  background-size: 33.33% 33.33%;
-  background-position: center;
-  opacity: 0.5;
 }
 .hia-hint {
   position: absolute;
@@ -1559,55 +1545,6 @@ a {
 }
 .hia-sliders input[type="range"] {
   width: 100%;
-}
-
-.hia-mini-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-}
-.hia-mini {
-  width: 220px;
-  max-width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  overflow: hidden;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-.hia-mini-hero {
-  position: relative;
-  height: 55px;
-  overflow: hidden;
-  border-top: 2px solid var(--acc);
-}
-.hia-mini-hero img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.hia-mini-wash {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--surface) 92%, transparent) 0%, transparent 62%);
-}
-.hia-mini-title {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  font-weight: 700;
-  z-index: 1;
-  color: var(--text);
-}
-.hia-mini-body {
-  height: 26px;
-  background: var(--surface-2);
-  border-top: 1px solid var(--border);
 }
 
 .hia-foot {
