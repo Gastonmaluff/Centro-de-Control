@@ -158,6 +158,13 @@ export const IcServer = (p: P) => (
     <path d="M7 7.5h.01M7 16.5h.01" />
   </svg>
 );
+export const IcDatabase = (p: P) => (
+  <svg {...base(p)}>
+    <ellipse cx="12" cy="5.5" rx="7" ry="3" />
+    <path d="M5 5.5v13c0 1.7 3.1 3 7 3s7-1.3 7-3v-13" />
+    <path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" />
+  </svg>
+);
 export const IcAlert = (p: P) => (
   <svg {...base(p)}>
     <path d="M12 3 2 20h20z" />

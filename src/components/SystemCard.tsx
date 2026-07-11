@@ -8,9 +8,12 @@ import { headerAdjustFrom, headerImageStyle } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
 import { backupErrorMessage, backupHealthMessage, checkBackupNow, runMonitorSystem } from "../lib/monitoring";
+import { googleCloudBackupUrl } from "../lib/backups";
+import BackupDetailsModal from "./BackupDetailsModal";
 import {
   IcCloud,
   IcChevronDown,
+  IcDatabase,
   IcDomain,
   IcEdit,
   IcExternal,
@@ -32,6 +35,7 @@ export default function SystemCard({ sys }: { sys: System }) {
   const [reanalyzing, setReanalyzing] = useState(false);
   const [backupChecking, setBackupChecking] = useState(false);
   const [backupNotice, setBackupNotice] = useState<{ tone: "ok" | "warn" | "down" | "pending"; text: string } | null>(null);
+  const [backupDetailsOpen, setBackupDetailsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +58,7 @@ export default function SystemCard({ sys }: { sys: System }) {
   const techChecks = ["application", "domain", "backup"].flatMap((key) => components.find((c) => c.key === key) ?? []);
   const showHeaderImage = Boolean(sys.headerImageUrl && sys.headerImageEnabled !== false);
   const headerIncludesLogo = showHeaderImage && sys.headerImageIncludesLogo === true;
+  const backupUrl = googleCloudBackupUrl(sys.backupConfig);
 
   const handleDelete = async () => {
     setMenu(false);
@@ -135,7 +140,7 @@ export default function SystemCard({ sys }: { sys: System }) {
           )}
           <div className="sys-tech-grid">
             {techChecks.map((check) => (
-              <TechCheck key={check.key} check={check} />
+              <TechCheck key={check.key} check={check} onBackupClick={check.key === "backup" ? () => setBackupDetailsOpen(true) : undefined} systemName={sys.name} />
             ))}
             <ModeCheck mode={mon?.mode} label="Monitoreo" checkedAt={mon?.checkedAt} reanalyzing={reanalyzing} />
           </div>
@@ -167,6 +172,7 @@ export default function SystemCard({ sys }: { sys: System }) {
             <QLink href={link.admin} title="Abrir panel administrativo"><IcServer width={16} height={16} /></QLink>
             <QLink href={link.github} title="GitHub"><IcGithub width={16} height={16} /></QLink>
             <QLink href={link.firebase} title="Firebase"><IcFirebase width={16} height={16} /></QLink>
+            <QLink href={backupUrl} title="Abrir backups en Google Cloud" disabledTitle="Backup no configurado"><IcDatabase width={16} height={16} /></QLink>
             <QLink href={link.cloudflare} title="Cloudflare"><IcCloud width={16} height={16} /></QLink>
             <QLink href={link.domain} title="Dominio"><IcDomain width={16} height={16} /></QLink>
             <div className="card-menu" ref={menuRef}>
@@ -188,11 +194,20 @@ export default function SystemCard({ sys }: { sys: System }) {
           </section>
         </footer>
       </div>
+      {backupDetailsOpen && <BackupDetailsModal system={sys} onClose={() => setBackupDetailsOpen(false)} />}
     </article>
   );
 }
 
-function TechCheck({ check }: { check: ReturnType<typeof getTechnicalComponents>[number] }) {
+function TechCheck({
+  check,
+  onBackupClick,
+  systemName,
+}: {
+  check: ReturnType<typeof getTechnicalComponents>[number];
+  onBackupClick?: () => void;
+  systemName: string;
+}) {
   const info = componentStateInfo[check.state];
   const backup = check as typeof check & {
     retentionSeconds?: number | null;
@@ -214,14 +229,32 @@ function TechCheck({ check }: { check: ReturnType<typeof getTechnicalComponents>
     expires,
   ].filter(Boolean);
   const title = `${check.label}: ${info.label}. ${check.message ?? "Sin mensaje"}. ${meta.join(" - ")}`;
-
-  return (
-    <div className={`tech-check ${info.tone}`} title={title}>
+  const content = (
+    <>
       <span className={`check-dot ${info.tone}`} />
       <span className="check-main">
         <b>{check.label}</b>
         <small>{check.message ?? info.label}</small>
       </span>
+    </>
+  );
+
+  if (onBackupClick) {
+    return (
+      <button
+        className={`tech-check tech-check-button ${info.tone}`}
+        type="button"
+        onClick={onBackupClick}
+        aria-label={`Abrir detalle de backup de ${systemName}: ${check.message ?? info.label}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={`tech-check ${info.tone}`} title={title}>
+      {content}
     </div>
   );
 }
@@ -259,10 +292,10 @@ function InfoItem({
   );
 }
 
-function QLink({ href, title, children }: { href?: string; title: string; children: ReactNode }) {
+function QLink({ href, title, disabledTitle, children }: { href?: string; title: string; disabledTitle?: string; children: ReactNode }) {
   if (!href) {
     return (
-      <span className="qlink disabled" title={`${title} (no configurado)`}>
+      <span className="qlink disabled" title={disabledTitle ?? `${title} (no configurado)`}>
         {children}
       </span>
     );
