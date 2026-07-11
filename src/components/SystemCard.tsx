@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { ComponentState, System } from "../data/types";
+import type { ComponentKey, System } from "../data/types";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus, projectStatusInfo, statusInfo } from "../lib/status";
 import { componentStateInfo, getTechnicalComponents } from "../lib/technical";
-import { dateTime, hrefs, money, timeAgo } from "../lib/format";
+import { dateTime, hrefs, money } from "../lib/format";
 import { headerAdjustFrom, headerImageStyle } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
@@ -56,7 +56,10 @@ export default function SystemCard({ sys }: { sys: System }) {
   const open = sys.todoStats?.open ?? 0;
   const components = getTechnicalComponents(sys);
   const response = components.find((c) => c.key === "application")?.responseMs ?? mon?.responseMs;
-  const techChecks = ["application", "domain", "backup"].flatMap((key) => components.find((c) => c.key === key) ?? []);
+  const appCheck = components.find((c) => c.key === "application");
+  const domainCheck = components.find((c) => c.key === "domain");
+  const backupCheck = components.find((c) => c.key === "backup");
+  const serviceChecks = (["authentication", "database", "functions", "storage"] as ComponentKey[]).map((key) => components.find((c) => c.key === key) ?? serviceFallback(key));
   const showHeaderImage = Boolean(sys.headerImageUrl && sys.headerImageEnabled !== false);
   const headerIncludesLogo = showHeaderImage && sys.headerImageIncludesLogo === true;
   const backupUrl = googleCloudBackupUrl(sys.backupConfig);
@@ -143,10 +146,26 @@ export default function SystemCard({ sys }: { sys: System }) {
             </div>
           )}
           <div className="sys-tech-grid">
-            {techChecks.map((check) => (
-              <TechCheck key={check.key} check={check} onBackupClick={check.key === "backup" ? () => setBackupDetailsOpen(true) : undefined} systemName={sys.name} />
-            ))}
-            <ModeCheck mode={mon?.mode} label="Monitoreo" checkedAt={mon?.checkedAt} reanalyzing={reanalyzing} />
+            <div className="tech-column tech-column-stack">
+              {appCheck && <TechCheck check={appCheck} systemName={sys.name} compact />}
+              {domainCheck && <TechCheck check={domainCheck} systemName={sys.name} compact />}
+            </div>
+            {backupCheck && (
+              <TechCheck
+                check={backupCheck}
+                onBackupClick={() => setBackupDetailsOpen(true)}
+                systemName={sys.name}
+                className="tech-column"
+              />
+            )}
+            <div className="tech-column tech-services" aria-label="Servicios">
+              <b className="tech-services-title">Servicios</b>
+              <div className="tech-services-grid">
+                {serviceChecks.map((check) => (
+                  <ServiceStatus key={check.key} check={check} />
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -207,10 +226,14 @@ function TechCheck({
   check,
   onBackupClick,
   systemName,
+  compact = false,
+  className,
 }: {
   check: ReturnType<typeof getTechnicalComponents>[number];
   onBackupClick?: () => void;
   systemName: string;
+  compact?: boolean;
+  className?: string;
 }) {
   const info = componentStateInfo[check.state];
   const backup = check as typeof check & {
@@ -236,7 +259,7 @@ function TechCheck({
   const content = (
     <>
       <span className={`check-dot ${info.tone}`} />
-      <span className="check-main">
+      <span className={`check-main ${compact ? "compact" : ""}`}>
         <b>{check.label}</b>
         <small>{check.message ?? info.label}</small>
       </span>
@@ -246,7 +269,7 @@ function TechCheck({
   if (onBackupClick) {
     return (
       <button
-        className={`tech-check tech-check-button ${info.tone}`}
+        className={`tech-check tech-check-button ${info.tone} ${className ?? ""}`}
         type="button"
         onClick={onBackupClick}
         aria-label={`Abrir detalle de backup de ${systemName}: ${check.message ?? info.label}`}
@@ -257,24 +280,47 @@ function TechCheck({
   }
 
   return (
-    <div className={`tech-check ${info.tone}`} title={title}>
+    <div className={`tech-check ${info.tone} ${className ?? ""}`} title={title}>
       {content}
     </div>
   );
 }
 
-function ModeCheck({ mode, label, checkedAt, reanalyzing }: { mode?: "basic" | "full"; label: string; checkedAt?: string; reanalyzing: boolean }) {
-  const state: ComponentState = mode === "full" ? "ok" : mode === "basic" ? "unknown" : "unknown";
-  const info = componentStateInfo[state];
+function ServiceStatus({ check }: { check: ReturnType<typeof getTechnicalComponents>[number] }) {
+  const info = componentStateInfo[check.state];
   return (
-    <div className={`tech-check ${info.tone}`} title={`${label} - ${checkedAt ? dateTime(checkedAt) : "sin comprobacion"}`}>
+    <span className="service-status" title={`${check.label}: ${info.label}. ${check.message ?? "Sin mensaje"}`}>
       <span className={`check-dot ${info.tone}`} />
-      <span className="check-main">
-        <b>{label}</b>
-        <small>{reanalyzing ? "Verificando..." : mode === "full" ? "Completo" : mode === "basic" ? "Basico" : checkedAt ? timeAgo(checkedAt) : "Sin comprobacion"}</small>
-      </span>
-    </div>
+      <span>{serviceLabel(check.key)}</span>
+    </span>
   );
+}
+
+function serviceLabel(key: ComponentKey): string {
+  switch (key) {
+    case "authentication":
+      return "Authentication";
+    case "database":
+      return "Database";
+    case "functions":
+      return "Functions";
+    case "storage":
+      return "Storage";
+    default:
+      return key;
+  }
+}
+
+function serviceFallback(key: ComponentKey): ReturnType<typeof getTechnicalComponents>[number] {
+  return {
+    key,
+    label: serviceLabel(key),
+    state: "unknown",
+    configured: false,
+    critical: false,
+    source: "health-endpoint",
+    message: "No configurado",
+  };
 }
 
 function InfoItem({
