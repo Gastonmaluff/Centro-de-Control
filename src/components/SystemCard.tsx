@@ -120,12 +120,14 @@ export default function SystemCard({ sys }: { sys: System }) {
           <div className="sys-title">
             <div className="sys-name">{sys.name}</div>
             <div className="sys-tag">{sys.description || projectStatusInfo[sys.projectStatus]}</div>
-            <LiveMonitorIndicator status={status} />
+            <div className="sys-live-status">
+              <LiveMonitorIndicator status={status} seed={`${sys.id}:${sys.name}`} label={si.label} />
+              <span className={`status-chip ${si.tone}`}>
+                <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
+                {si.label}
+              </span>
+            </div>
           </div>
-          <span className={`status-chip ${si.tone}`}>
-            <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
-            {si.label}
-          </span>
         </div>
         <button className="sys-detail-btn" type="button" onClick={() => openEdit(sys)}>
           Ver detalles <IcChevronDown width={15} height={15} />

@@ -1059,6 +1059,14 @@ a {
   margin-top: 3px;
   color: color-mix(in srgb, var(--text-muted) 88%, var(--acc));
 }
+.sys-live-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+  min-width: 0;
+}
 .sys-hero .status-chip {
   align-self: center;
   white-space: nowrap;
@@ -1079,9 +1087,6 @@ a {
 }
 .sys-hero.includes-logo .sys-title {
   grid-column: 2;
-}
-.sys-hero.includes-logo .status-chip {
-  grid-column: 3;
 }
 .sys-hero.includes-logo .sys-name {
   color: #172033;
@@ -1416,6 +1421,19 @@ a {
   .sys-hero .sys-name {
     font-size: 14px;
   }
+  .sys-live-status {
+    gap: 5px;
+    margin-top: 6px;
+  }
+  .sys-live-status .live-monitor {
+    width: clamp(58px, 18vw, 72px);
+    min-width: 58px;
+  }
+  .sys-live-status .status-chip {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    margin-top: 0;
+  }
   .sys-hero .status-chip {
     grid-column: 2;
     justify-self: start;
@@ -1431,7 +1449,7 @@ a {
   .sys-hero.includes-logo .sys-hero-content {
     width: 100%;
     padding: 12px 48px 12px 8px;
-    grid-template-columns: minmax(150px, 42%) minmax(0, 1fr);
+    grid-template-columns: minmax(126px, 36%) minmax(0, 1fr);
     grid-template-rows: auto auto;
     column-gap: 8px;
     row-gap: 6px;
@@ -1744,62 +1762,76 @@ a {
 .live-monitor {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 6px;
-  max-width: 100%;
-  min-width: 0;
+  flex: 0 1 auto;
+  width: clamp(104px, 18vw, 145px);
+  min-width: 96px;
 }
 .live-monitor.live { color: var(--ok); }
 .live-monitor.warning { color: var(--warn); }
 .live-monitor.down { color: var(--down); }
-.live-monitor.partial { color: var(--pending); }
+.live-monitor.partial { color: color-mix(in srgb, var(--pending) 82%, var(--text-muted)); }
+.live-monitor.archived { color: color-mix(in srgb, var(--text-muted) 86%, var(--border)); }
+
+.live-monitor-window {
+  display: block;
+  width: 100%;
+  height: 20px;
+  overflow: hidden;
+  border-radius: 999px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+}
 
 .live-monitor-ecg {
-  width: clamp(120px, 42vw, 160px);
-  height: 18px;
-  flex: 0 1 auto;
-  min-width: 0;
+  width: 240%;
+  height: 20px;
   overflow: visible;
+  transform: translate3d(0, 0, 0);
+  animation: ecgDrift var(--ecg-duration, 9s) linear infinite;
+  animation-delay: var(--ecg-delay, 0s);
 }
 .live-monitor .ecg-track {
   fill: none;
-  stroke: color-mix(in srgb, currentColor 24%, transparent);
-  stroke-width: 1.4;
+  stroke: color-mix(in srgb, currentColor 18%, transparent);
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .live-monitor .ecg-pulse {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.7;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 22 78;
   filter: drop-shadow(0 0 3px color-mix(in srgb, currentColor 55%, transparent));
-  animation: ecgRun 2.4s linear infinite;
+  opacity: 0.9;
 }
 /* Advertencias: mismo recorrido pero más lento */
-.live-monitor.warning .ecg-pulse {
-  animation-duration: 3.6s;
+.live-monitor.warning .live-monitor-ecg {
+  animation-duration: calc(var(--ecg-duration, 9s) * 1.12);
 }
-@keyframes ecgRun {
-  from { stroke-dashoffset: 100; }
-  to { stroke-dashoffset: 0; }
+.live-monitor.partial .live-monitor-ecg {
+  animation-duration: calc(var(--ecg-duration, 9s) * 1.35);
+}
+.live-monitor.down .ecg-pulse,
+.live-monitor.archived .ecg-pulse {
+  opacity: 0.72;
+}
+@keyframes ecgDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-58%, 0, 0); }
 }
 /* Estados no operativos: línea detenida, sin pulso engañoso */
 .live-monitor.is-idle .ecg-pulse {
   animation: none;
-  opacity: 0;
+  opacity: 0.38;
+}
+.live-monitor.is-idle .live-monitor-ecg {
+  animation: none;
+  transform: translate3d(-10%, 0, 0);
 }
 .live-monitor.is-idle .ecg-track {
   stroke: color-mix(in srgb, currentColor 48%, transparent);
-}
-.live-monitor-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: currentColor;
-  white-space: nowrap;
 }
 
 /* Accesibilidad: sin movimiento continuo. Se mantiene un indicador estático. */
@@ -1809,14 +1841,11 @@ a {
     animation: none;
     transform: none;
   }
-  .live-monitor .ecg-pulse {
+  .live-monitor-ecg,
+  .live-monitor.warning .live-monitor-ecg,
+  .live-monitor.partial .live-monitor-ecg {
     animation: none;
-  }
-  /* Mostrar la línea completa fija en lugar del pulso recorriendo */
-  .live-monitor.is-active .ecg-pulse {
-    stroke-dasharray: none;
-    stroke-dashoffset: 0;
-    opacity: 1;
+    transform: translate3d(-18%, 0, 0);
   }
 }
 
