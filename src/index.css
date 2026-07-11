@@ -665,6 +665,17 @@ a {
 .led.ok {
   background: var(--ok);
   box-shadow: 0 0 0 3px var(--ok-weak);
+  animation: ledPulse 2.1s ease-in-out infinite;
+}
+@keyframes ledPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px var(--ok-weak), 0 0 0 0 color-mix(in srgb, var(--ok) 42%, transparent);
+  }
+  50% {
+    transform: scale(1.14);
+    box-shadow: 0 0 0 3px var(--ok-weak), 0 0 0 6px color-mix(in srgb, var(--ok) 0%, transparent);
+  }
 }
 .led.warn {
   background: var(--warn);
@@ -1177,6 +1188,11 @@ a {
   height: 9px;
   box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 9%, transparent);
 }
+/* Desfase para que los indicadores no pulsen todos a la vez */
+.sys-tech-grid .tech-check:nth-child(1) .check-dot.ok { animation-delay: 0s; }
+.sys-tech-grid .tech-check:nth-child(2) .check-dot.ok { animation-delay: 0.35s; }
+.sys-tech-grid .tech-check:nth-child(3) .check-dot.ok { animation-delay: 0.7s; }
+.sys-tech-grid .tech-check:nth-child(4) .check-dot.ok { animation-delay: 1.05s; }
 .sys-tech-grid .check-main small {
   font-size: 10px;
 }
@@ -1724,6 +1740,86 @@ a {
   color: var(--ok);
 }
 
+/* ===== Indicador de monitoreo en vivo (ECG) ===== */
+.live-monitor {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  max-width: 100%;
+  min-width: 0;
+}
+.live-monitor.live { color: var(--ok); }
+.live-monitor.warning { color: var(--warn); }
+.live-monitor.down { color: var(--down); }
+.live-monitor.partial { color: var(--pending); }
+
+.live-monitor-ecg {
+  width: clamp(120px, 42vw, 160px);
+  height: 18px;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: visible;
+}
+.live-monitor .ecg-track {
+  fill: none;
+  stroke: color-mix(in srgb, currentColor 24%, transparent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.live-monitor .ecg-pulse {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 22 78;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, currentColor 55%, transparent));
+  animation: ecgRun 2.4s linear infinite;
+}
+/* Advertencias: mismo recorrido pero más lento */
+.live-monitor.warning .ecg-pulse {
+  animation-duration: 3.6s;
+}
+@keyframes ecgRun {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+/* Estados no operativos: línea detenida, sin pulso engañoso */
+.live-monitor.is-idle .ecg-pulse {
+  animation: none;
+  opacity: 0;
+}
+.live-monitor.is-idle .ecg-track {
+  stroke: color-mix(in srgb, currentColor 48%, transparent);
+}
+.live-monitor-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: currentColor;
+  white-space: nowrap;
+}
+
+/* Accesibilidad: sin movimiento continuo. Se mantiene un indicador estático. */
+@media (prefers-reduced-motion: reduce) {
+  .led.ok,
+  .check-dot.ok {
+    animation: none;
+    transform: none;
+  }
+  .live-monitor .ecg-pulse {
+    animation: none;
+  }
+  /* Mostrar la línea completa fija en lugar del pulso recorriendo */
+  .live-monitor.is-active .ecg-pulse {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
 .sys-tech,
 .sys-info,
 .sys-commerce {
@@ -1773,6 +1869,17 @@ a {
 }
 .check-dot.ok {
   background: var(--ok);
+  animation: dotPulse 2.3s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 38%, transparent);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok) 0%, transparent);
+  }
 }
 .check-dot.warn {
   background: var(--warn);

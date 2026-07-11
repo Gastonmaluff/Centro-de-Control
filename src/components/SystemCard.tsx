@@ -10,6 +10,7 @@ import { fetchLastCommit } from "../lib/github";
 import { backupErrorMessage, backupHealthMessage, checkBackupNow, runMonitorSystem } from "../lib/monitoring";
 import { googleCloudBackupUrl } from "../lib/backups";
 import BackupDetailsModal from "./BackupDetailsModal";
+import LiveMonitorIndicator from "./LiveMonitorIndicator";
 import {
   IcCloud,
   IcChevronDown,
@@ -119,6 +120,7 @@ export default function SystemCard({ sys }: { sys: System }) {
           <div className="sys-title">
             <div className="sys-name">{sys.name}</div>
             <div className="sys-tag">{sys.description || projectStatusInfo[sys.projectStatus]}</div>
+            <LiveMonitorIndicator status={status} />
           </div>
           <span className={`status-chip ${si.tone}`}>
             <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
