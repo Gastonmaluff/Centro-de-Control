@@ -1,4 +1,4 @@
-import type { ComponentCheck, ComponentKey, ComponentState, ComputedStatus, System } from "../data/types";
+import type { BackupCheck, ComponentCheck, ComponentKey, ComponentState, ComputedStatus, System } from "../data/types";
 
 export type TechnicalComponent = ComponentCheck & {
   key: ComponentKey;
@@ -25,12 +25,42 @@ export const componentOrder: ComponentKey[] = [
   "backup",
 ];
 
-export const componentStateInfo: Record<ComponentState, { label: string; tone: "ok" | "warn" | "down" | "muted" }> = {
+export const componentStateInfo: Record<ComponentState, { label: string; tone: "ok" | "warn" | "down" | "muted" | "pending" }> = {
   ok: { label: "Operativo", tone: "ok" },
   warn: { label: "Advertencia", tone: "warn" },
   down: { label: "Error", tone: "down" },
   unknown: { label: "No verificable", tone: "muted" },
+  pending: { label: "Conexion pendiente", tone: "pending" },
 };
+
+function backupHealthToCheck(sys: System): BackupCheck | null {
+  const h = sys.backupHealth;
+  if (!h) return null;
+  const state: ComponentState =
+    h.status === "healthy"
+      ? "ok"
+      : h.status === "warning"
+      ? "warn"
+      : h.status === "error"
+      ? "down"
+      : h.status === "connection_required"
+      ? "pending"
+      : "unknown";
+  return {
+    state,
+    configured: h.configured,
+    critical: false,
+    checkedAt: h.checkedAt,
+    source: h.source,
+    message: h.message,
+    consecutiveFails: h.consecutiveFailures,
+    lastSuccessAt: h.latestSnapshotTime ?? undefined,
+    lastResult: h.latestBackupState === "READY" ? "success" : h.latestBackupState === "NOT_AVAILABLE" ? "failed" : h.latestBackupState ? "unknown" : "missing",
+    scheduleType: h.scheduleType,
+    retentionSeconds: h.retentionSeconds,
+    latestExpireTime: h.latestExpireTime,
+  };
+}
 
 function legacyComponents(sys: System): Partial<Record<ComponentKey, ComponentCheck>> {
   const m = sys.monitoring;
@@ -93,7 +123,9 @@ export function getTechnicalComponents(sys: System): TechnicalComponent[] {
     ...legacyComponents(sys),
     ...(sys.monitoring?.components ?? {}),
   };
-  if (sys.monitoring?.backup) raw.backup = sys.monitoring.backup;
+  const backupHealth = backupHealthToCheck(sys);
+  if (backupHealth) raw.backup = backupHealth;
+  else if (sys.monitoring?.backup) raw.backup = sys.monitoring.backup;
   if (!raw.backup) {
     raw.backup = {
       state: "unknown",

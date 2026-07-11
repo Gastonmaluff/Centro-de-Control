@@ -7,7 +7,7 @@ import { dateTime, hrefs, money, timeAgo } from "../lib/format";
 import { headerAdjustFrom, headerImageStyle } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
-import { runMonitorSystem } from "../lib/monitoring";
+import { checkBackupNow, runMonitorSystem } from "../lib/monitoring";
 import {
   IcCloud,
   IcChevronDown,
@@ -30,6 +30,7 @@ export default function SystemCard({ sys }: { sys: System }) {
   const { openEdit, removeSystem, openTodos } = useSystemsCtx();
   const [menu, setMenu] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
+  const [backupChecking, setBackupChecking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,8 +71,21 @@ export default function SystemCard({ sys }: { sys: System }) {
       if (gitInfo) patch.git = gitInfo;
       if (!checked && !gitInfo) patch.updatedAt = new Date().toISOString();
       if (Object.keys(patch).length) await patchSystem(sys.id, patch);
+      if (sys.backupConfig?.provider === "firestore" && sys.backupConfig.enabled !== false) {
+        await checkBackupNow(sys.id);
+      }
     } finally {
       setReanalyzing(false);
+    }
+  };
+
+  const handleBackupCheck = async () => {
+    setMenu(false);
+    setBackupChecking(true);
+    try {
+      await checkBackupNow(sys.id);
+    } finally {
+      setBackupChecking(false);
     }
   };
 
@@ -150,7 +164,10 @@ export default function SystemCard({ sys }: { sys: System }) {
                 <div className="card-dropdown">
                   <button onClick={() => { setMenu(false); openEdit(sys); }}><IcEdit width={15} height={15} /> Editar</button>
                   <button onClick={() => { setMenu(false); openTodos(sys); }}><IcTasks width={15} height={15} /> Ver pendientes</button>
-                  <button onClick={handleReanalyze} disabled={reanalyzing}><IcRefresh width={15} height={15} /> {reanalyzing ? "Reanalizando" : "Reanalizar"}</button>
+                  <button onClick={handleReanalyze} disabled={reanalyzing || backupChecking}><IcRefresh width={15} height={15} /> {reanalyzing ? "Reanalizando" : "Reanalizar"}</button>
+                  <button onClick={handleBackupCheck} disabled={backupChecking || sys.backupConfig?.provider !== "firestore"}>
+                    <IcCloud width={15} height={15} /> {backupChecking ? "Verificando backup" : "Verificar backup"}
+                  </button>
                   <button className="danger" onClick={handleDelete}><IcTrash width={15} height={15} /> Eliminar</button>
                 </div>
               )}
@@ -164,10 +181,24 @@ export default function SystemCard({ sys }: { sys: System }) {
 
 function TechCheck({ check }: { check: ReturnType<typeof getTechnicalComponents>[number] }) {
   const info = componentStateInfo[check.state];
+  const backup = check as typeof check & {
+    retentionSeconds?: number | null;
+    scheduleType?: "daily" | "weekly" | "unknown" | null;
+    lastSuccessAt?: string;
+    latestExpireTime?: string | null;
+  };
+  const retention = backup.retentionSeconds ? `${Math.round(backup.retentionSeconds / 86400)} dias` : null;
+  const schedule = backup.scheduleType ? backup.scheduleType === "daily" ? "diaria" : backup.scheduleType === "weekly" ? "semanal" : "desconocida" : null;
+  const latest = backup.lastSuccessAt ? `Ultimo backup: ${dateTime(backup.lastSuccessAt)}` : null;
+  const expires = backup.latestExpireTime ? `Vence: ${dateTime(backup.latestExpireTime)}` : null;
   const meta = [
     check.responseMs != null ? `${check.responseMs} ms` : null,
     check.source,
     check.checkedAt ? dateTime(check.checkedAt) : null,
+    schedule ? `Frecuencia: ${schedule}` : null,
+    retention ? `Retencion: ${retention}` : null,
+    latest,
+    expires,
   ].filter(Boolean);
   const title = `${check.label}: ${info.label}. ${check.message ?? "Sin mensaje"}. ${meta.join(" - ")}`;
 

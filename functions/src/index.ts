@@ -3,6 +3,14 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import {
+  BackupCheckError,
+  buildBackupHealth,
+  queryFirestoreBackupApi,
+  type BackupConfig,
+  type BackupHealth,
+  type BackupStatus,
+} from "./backups";
 
 initializeApp();
 const db = getFirestore();
@@ -14,7 +22,7 @@ const REGION = "us-central1";
 const REQUEST_TIMEOUT_MS = 15000;
 const HIGH_LATENCY_MS = 3000;
 
-type ComponentState = "ok" | "warn" | "down" | "unknown";
+type ComponentState = "ok" | "warn" | "down" | "unknown" | "pending";
 type ComponentKey =
   | "application"
   | "database"
@@ -40,6 +48,9 @@ interface BackupCheck extends ComponentCheck {
   lastResult?: "success" | "failed" | "missing" | "unknown";
   nextRunAt?: string;
   maxAgeHours?: number;
+  scheduleType?: "daily" | "weekly" | "unknown" | null;
+  retentionSeconds?: number | null;
+  latestExpireTime?: string | null;
 }
 
 interface MonitoringDoc {
@@ -79,6 +90,8 @@ interface SystemDoc {
   projectStatus?: string;
   links?: { publicUrl?: string; domain?: string };
   monitoring?: MonitoringDoc;
+  backupConfig?: BackupConfig;
+  backupHealth?: BackupHealth;
 }
 
 interface HealthPayload {
@@ -246,6 +259,38 @@ function backupFromHealth(value: unknown, checkedAt: string, previous?: BackupCh
     previous
   );
   return { ...base, lastSuccessAt, lastResult, nextRunAt, maxAgeHours };
+}
+
+function backupStateFromHealth(health: BackupHealth): ComponentState {
+  if (health.status === "healthy") return "ok";
+  if (health.status === "warning") return "warn";
+  if (health.status === "error") return "down";
+  if (health.status === "connection_required") return "pending";
+  return "unknown";
+}
+
+function backupComponentFromHealth(health: BackupHealth): BackupCheck {
+  return {
+    state: backupStateFromHealth(health),
+    configured: health.configured,
+    critical: false,
+    checkedAt: health.checkedAt,
+    source: health.source,
+    message: health.message,
+    consecutiveFails: health.consecutiveFailures,
+    lastSuccessAt: health.latestSnapshotTime ?? undefined,
+    lastResult:
+      health.latestBackupState === "READY"
+        ? "success"
+        : health.latestBackupState === "NOT_AVAILABLE"
+        ? "failed"
+        : health.latestBackupState
+        ? "unknown"
+        : "missing",
+    scheduleType: health.scheduleType,
+    retentionSeconds: health.retentionSeconds,
+    latestExpireTime: health.latestExpireTime,
+  };
 }
 
 function healthComponents(
@@ -435,6 +480,75 @@ async function recordIncidents(
   await Promise.all(writes);
 }
 
+function backupEventKind(status: BackupStatus, previous?: BackupStatus): string | null {
+  if (!previous && status === "healthy") return "backup actualizado";
+  if (!previous && status === "connection_required") return "permisos pendientes";
+  if (previous === status) return null;
+  if (status === "healthy" && previous && previous !== "healthy") return "backup recuperado";
+  if (status === "healthy") return "backup actualizado";
+  if (status === "warning") return "backup atrasado";
+  if (status === "error") return "backup no disponible";
+  if (status === "not_configured") return "sin programacion de backup";
+  if (status === "connection_required") return previous === "healthy" ? "permisos revocados" : "conexion pendiente";
+  return null;
+}
+
+async function recordBackupEvent(
+  docRef: FirebaseFirestore.DocumentReference,
+  sys: SystemDoc,
+  previous: BackupHealth | undefined,
+  next: BackupHealth
+) {
+  const kind = backupEventKind(next.status, previous?.status);
+  if (!kind) return;
+  await docRef.collection("activity").add({
+    kind: "backup",
+    system: sys.name ?? "",
+    text: `${kind}: ${next.message}`,
+    time: next.checkedAt,
+    at: FieldValue.serverTimestamp(),
+  });
+}
+
+async function checkBackupDoc(docRef: FirebaseFirestore.DocumentReference): Promise<BackupHealth> {
+  const snap = await docRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Sistema no encontrado.");
+  const sys = snap.data() as SystemDoc;
+  const startedAt = Date.now();
+  let health: BackupHealth;
+
+  try {
+    const apiResult = await queryFirestoreBackupApi(sys.backupConfig ?? {});
+    health = buildBackupHealth({
+      config: sys.backupConfig ?? {},
+      apiResult,
+      previous: sys.backupHealth,
+      startedAt,
+    });
+  } catch (e) {
+    const error = e instanceof BackupCheckError ? e : new BackupCheckError("temporary", "No se pudo verificar temporalmente");
+    health = buildBackupHealth({
+      config: sys.backupConfig ?? {},
+      previous: sys.backupHealth,
+      startedAt,
+      error,
+    });
+  }
+
+  const backupComponent = backupComponentFromHealth(health);
+  await docRef.set(
+    {
+      backupHealth: health,
+      "monitoring.components.backup": backupComponent,
+      "monitoring.backup": backupComponent,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
+  await recordBackupEvent(docRef, sys, sys.backupHealth, health);
+  return health;
+}
+
 async function monitorSystemDoc(docRef: FirebaseFirestore.DocumentReference): Promise<boolean> {
   const snap = await docRef.get();
   if (!snap.exists) throw new HttpsError("not-found", "Sistema no encontrado.");
@@ -470,6 +584,17 @@ export const monitorSystem = onCall(
   }
 );
 
+export const checkBackupNow = onCall(
+  { region: REGION, timeoutSeconds: 120, memory: "256MiB" },
+  async (req) => {
+    if (!req.auth) throw new HttpsError("unauthenticated", "Necesitas iniciar sesion.");
+    const id = String(req.data?.systemId ?? req.data?.id ?? "").trim();
+    if (!id) throw new HttpsError("invalid-argument", "ID de sistema requerido.");
+    const health = await checkBackupDoc(db.collection("systems").doc(id));
+    return { health };
+  }
+);
+
 async function runSweep(source: string): Promise<number> {
   const snap = await db.collection("systems").get();
   let checked = 0;
@@ -495,6 +620,23 @@ export const scheduledMonitor = onSchedule(
   { schedule: "every 30 minutes", region: REGION, timeoutSeconds: 300, memory: "256MiB" },
   async () => {
     await runSweep("scheduler");
+  }
+);
+
+export const scheduledBackupMonitor = onSchedule(
+  { schedule: "every 6 hours", region: REGION, timeoutSeconds: 540, memory: "256MiB" },
+  async () => {
+    const snap = await db.collection("systems").where("backupConfig.provider", "==", "firestore").get();
+    let checked = 0;
+    await Promise.all(
+      snap.docs.map(async (doc) => {
+        const sys = doc.data() as SystemDoc;
+        if (sys.backupConfig?.enabled === false) return;
+        await checkBackupDoc(doc.ref);
+        checked++;
+      })
+    );
+    logger.info(`backup sweep: ${checked} sistema(s) verificados`);
   }
 );
 

@@ -53,6 +53,65 @@ SEED_EMAIL=tu@correo.com SEED_PASSWORD=tuclave npm run seed
 npx firebase-tools@latest deploy --only firestore,auth
 ```
 
+### Backups de Cloud Firestore
+
+Centro de Control verifica backups programados de Cloud Firestore desde Cloud
+Functions Gen2. El navegador solo guarda identificadores no secretos en cada
+sistema:
+
+```js
+backupConfig: {
+  provider: "firestore",
+  projectId: "proyecto-monitoreado",
+  databaseId: "(default)",
+  expectedFrequency: "auto",
+  enabled: true
+}
+```
+
+No se guardan claves JSON, private keys, access tokens ni credenciales en
+Firestore publico, localStorage, frontend o variables de build de GitHub Pages.
+La Function usa Application Default Credentials de la cuenta de servicio que la
+ejecuta.
+
+Para que el backend pueda consultar un proyecto monitoreado, agregá la cuenta de
+servicio de Centro de Control en IAM del proyecto del sistema con estos roles de
+solo lectura:
+
+```text
+roles/datastore.backupsViewer
+roles/datastore.backupSchedulesViewer
+```
+
+En este proyecto, la cuenta esperada de Cloud Functions Gen2 es:
+
+```text
+880122089873-compute@developer.gserviceaccount.com
+```
+
+Si configurás otra cuenta de ejecución para Functions, usá esa cuenta en lugar
+de la anterior. Después de asignar permisos, abrí **Editar sistema -> Backup de
+Google Cloud -> Verificar conexion**. El botón llama a `checkBackupNow(systemId)`
+en el backend; no consulta Google Cloud desde el navegador.
+
+Endpoints usados por el backend:
+
+```text
+GET https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/{DATABASE_ID}/backupSchedules
+GET https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/locations/-/backups
+```
+
+La tarea programada `scheduledBackupMonitor` revisa los sistemas configurados
+cada 6 horas y actualiza `backupHealth` en Firestore.
+
+Deploy del backend:
+
+```bash
+npm --prefix functions install
+npm --prefix functions run build
+npx firebase-tools@latest deploy --only functions
+```
+
 ## Deploy a GitHub Pages
 
 La app se publica en la rama `gh-pages` del repo. El `base` de Vite ya apunta a

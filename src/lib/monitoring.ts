@@ -1,6 +1,6 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "../firebase/config";
-import type { Monitoring } from "../data/types";
+import type { BackupHealth, Monitoring } from "../data/types";
 
 /**
  * Pide al backend (Cloud Function `monitorUrl`) que verifique la URL pública.
@@ -41,4 +41,12 @@ export async function runMonitorSystem(id: string): Promise<boolean> {
   const call = httpsCallable<{ id: string }, { checked: boolean }>(functions, "monitorSystem");
   const res = await call({ id });
   return res.data.checked;
+}
+
+/** Verifica backups de Firestore desde Cloud Functions usando credenciales del backend. */
+export async function checkBackupNow(systemId: string): Promise<BackupHealth> {
+  const functions = getFunctions(app);
+  const call = httpsCallable<{ systemId: string }, { health: BackupHealth }>(functions, "checkBackupNow");
+  const res = await call({ systemId });
+  return res.data.health;
 }

@@ -17,6 +17,7 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
+export const firebaseProjectId = firebaseConfig.projectId as string | undefined;
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 // ignoreUndefinedProperties: escribir objetos con campos undefined (monitoring,
