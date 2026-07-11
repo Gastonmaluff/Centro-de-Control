@@ -12,7 +12,7 @@ export type ProjectStatus = "dev" | "prod" | "maintenance" | "paused" | "archive
 
 /** Estado técnico calculado automáticamente (no se carga a mano). */
 export type ComputedStatus = "operational" | "warning" | "down" | "unknown" | "archived";
-export type ComponentState = "ok" | "warn" | "down" | "unknown";
+export type ComponentState = "ok" | "warn" | "down" | "unknown" | "pending";
 export type ComponentKey =
   | "application"
   | "database"
@@ -38,6 +38,41 @@ export interface BackupCheck extends ComponentCheck {
   lastResult?: "success" | "failed" | "missing" | "unknown";
   nextRunAt?: string;
   maxAgeHours?: number;
+  scheduleType?: "daily" | "weekly" | "unknown" | null;
+  retentionSeconds?: number | null;
+  latestExpireTime?: string | null;
+}
+
+export type BackupProvider = "firestore" | "none";
+export type BackupExpectedFrequency = "auto" | "daily" | "weekly";
+export type BackupStatus = "healthy" | "warning" | "error" | "not_configured" | "connection_required";
+
+export interface BackupConfig {
+  provider?: BackupProvider;
+  projectId?: string;
+  databaseId?: string;
+  expectedFrequency?: BackupExpectedFrequency;
+  enabled?: boolean;
+}
+
+export interface BackupHealth {
+  provider: "firestore";
+  connectionStatus: "connected" | "pending" | "error";
+  configured: boolean;
+  status: BackupStatus;
+  scheduleType: "daily" | "weekly" | "unknown" | null;
+  scheduleDay: string | null;
+  retentionSeconds: number | null;
+  latestBackupState: "CREATING" | "READY" | "NOT_AVAILABLE" | string | null;
+  latestSnapshotTime: string | null;
+  latestExpireTime: string | null;
+  checkedAt: string;
+  durationMs?: number;
+  source: "google-cloud-firestore-admin-api";
+  consecutiveFailures: number;
+  errorCode: string | null;
+  errorMessage: string | null;
+  message: string;
 }
 
 export interface HealthEndpointInfo {
@@ -140,6 +175,8 @@ export interface System {
   createdApprox?: string;
   links: SystemLinks;
   client?: ClientInfo;
+  backupConfig?: BackupConfig;
+  backupHealth?: BackupHealth;
   // --- verificable (se descubre) ---
   monitoring?: Monitoring;
   git?: GitInfo;
@@ -189,6 +226,7 @@ export type ActivityKind =
   | "commit"
   | "deploy"
   | "deploy-failed"
+  | "backup"
   | "down"
   | "recovered"
   | "task"

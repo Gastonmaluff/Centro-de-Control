@@ -11,8 +11,8 @@ import SystemsSection from "./components/SystemsSection";
 import DashboardSections from "./components/DashboardSections";
 import SystemFormModal from "./components/SystemFormModal";
 import TodosModal from "./components/TodosModal";
-import { CobrosView, ClientesView, PlaceholderView } from "./components/views";
-import { IcBolt, IcCosts, IcDocs, IcMonitor, IcSessions, IcSettings, IcTasks } from "./components/icons";
+import { CobrosView, ClientesView, ConfigView, PlaceholderView } from "./components/views";
+import { IcBolt, IcCosts, IcDocs, IcMonitor, IcSessions, IcTasks } from "./components/icons";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -116,13 +116,7 @@ function MainView() {
         />
       );
     case "config":
-      return (
-        <PlaceholderView
-          icon={IcSettings}
-          title="Configuracion"
-          text="Preferencias del panel, tema, cuenta y opciones de tu Centro de Control."
-        />
-      );
+      return <ConfigView />;
     default:
       return null;
   }

@@ -2,6 +2,7 @@ import type { JSX, ReactNode } from "react";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { money } from "../lib/format";
 import type { System } from "../data/types";
+import { firebaseProjectId } from "../firebase/config";
 
 const serviceLabel: Record<NonNullable<System["client"]>["serviceStatus"] & string, { label: string; tone: string }> = {
   active: { label: "Activo", tone: "ok" },
@@ -159,6 +160,55 @@ export function ClientesView() {
           </table>
         </div>
       )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------ Configuracion */
+
+export function ConfigView() {
+  const backendProject = firebaseProjectId || "centro-de-control-d2d44";
+  const serviceAccount = backendProject === "centro-de-control-d2d44"
+    ? "880122089873-compute@developer.gserviceaccount.com"
+    : `<numero-del-proyecto>-compute@developer.gserviceaccount.com`;
+
+  return (
+    <>
+      <PageHead
+        title="Configuracion"
+        subtitle="Permisos de solo lectura para que Centro de Control verifique backups reales sin exponer credenciales en el navegador."
+      />
+      <div className="settings-grid">
+        <section className="settings-card">
+          <span className="sys-block-label">Cuenta de servicio del backend</span>
+          <h3>{serviceAccount}</h3>
+          <p>
+            Es la cuenta que ejecuta Cloud Functions Gen2 de Centro de Control. Confirmala en Google Cloud si cambiaste la cuenta de ejecucion.
+          </p>
+        </section>
+        <section className="settings-card">
+          <span className="sys-block-label">Proyecto monitoreado</span>
+          <h3>Agregar IAM en cada proyecto</h3>
+          <p>
+            En el proyecto Google Cloud del sistema, agregá esa cuenta de servicio con permisos de solo lectura para Firestore Backups.
+          </p>
+        </section>
+        <section className="settings-card span2">
+          <span className="sys-block-label">Roles exactos</span>
+          <div className="role-list">
+            <code>roles/datastore.backupsViewer</code>
+            <code>roles/datastore.backupSchedulesViewer</code>
+          </div>
+          <p>No hace falta rol de administrador. No pegues claves JSON ni private keys en la app.</p>
+        </section>
+        <section className="settings-card span2">
+          <span className="sys-block-label">Despues de otorgar permisos</span>
+          <h3>Volver a verificar</h3>
+          <p>
+            Abrí Editar sistema, completá “Backup de Google Cloud” y usá “Verificar conexion”. La card se actualiza en tiempo real cuando la Function escribe el resultado en Firestore.
+          </p>
+        </section>
+      </div>
     </>
   );
 }

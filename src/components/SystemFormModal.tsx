@@ -4,11 +4,12 @@ import type { SystemInput } from "../firebase/systems";
 import { patchSystem } from "../firebase/systems";
 import { useSystemsCtx } from "../context/SystemsContext";
 import { fetchLastCommit } from "../lib/github";
-import { checkUrl } from "../lib/monitoring";
+import { backupErrorMessage, backupHealthMessage, checkBackupNow, checkUrl } from "../lib/monitoring";
 import { deleteSystemHeader, uploadSystemHeader } from "../firebase/storage";
 import { headerAdjustFrom, headerImageStyle, type HeaderAdjust } from "../lib/headerImage";
 import HeaderImageAdjust from "./HeaderImageAdjust";
 import { IcCheck, IcCrop, IcImage, IcPlus, IcTrash, IcUpload } from "./icons";
+import type { BackupExpectedFrequency, BackupProvider } from "../data/types";
 
 interface Props {
   initial: System | null;
@@ -35,6 +36,10 @@ type FormState = {
   domain: string;
   cloudflare: string;
   docs: string;
+  backupProvider: BackupProvider;
+  backupProjectId: string;
+  backupDatabaseId: string;
+  backupExpectedFrequency: BackupExpectedFrequency;
   clientName: string;
   clientContact: string;
   monthly: string;
@@ -65,6 +70,10 @@ function initState(s: System | null): FormState {
     domain: s?.links.domain ?? "",
     cloudflare: s?.links.cloudflare ?? "",
     docs: s?.links.docs ?? "",
+    backupProvider: s?.backupConfig?.provider ?? "none",
+    backupProjectId: s?.backupConfig?.projectId ?? s?.links.firebaseProject ?? "",
+    backupDatabaseId: s?.backupConfig?.databaseId ?? "(default)",
+    backupExpectedFrequency: s?.backupConfig?.expectedFrequency ?? "auto",
     clientName: s?.client?.name ?? "",
     clientContact: s?.client?.contact ?? "",
     monthly: s?.client?.monthly != null ? String(s.client.monthly) : "",
@@ -118,6 +127,8 @@ export default function SystemFormModal({ initial, onClose }: Props) {
   const [headerPreview, setHeaderPreview] = useState(initial?.headerImageUrl ?? "");
   const [headerRemoved, setHeaderRemoved] = useState(false);
   const [imageNote, setImageNote] = useState("");
+  const [backupChecking, setBackupChecking] = useState(false);
+  const [backupCheckMessage, setBackupCheckMessage] = useState("");
   const [dragging, setDragging] = useState(false);
   const [headerAdjust, setHeaderAdjust] = useState<HeaderAdjust>(() => headerAdjustFrom(initial ?? {}));
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -170,6 +181,13 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       headerImageOffsetX: headerAdjust.offsetX,
       headerImageOffsetY: headerAdjust.offsetY,
       links,
+      backupConfig: {
+        provider: f.backupProvider,
+        projectId: f.backupProjectId.trim(),
+        databaseId: f.backupDatabaseId.trim() || "(default)",
+        expectedFrequency: f.backupExpectedFrequency,
+        enabled: f.backupProvider === "firestore",
+      },
       ...clean({ description: f.description.trim(), createdApprox: f.createdApprox.trim() }),
     };
 
@@ -328,6 +346,34 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     } catch {
       setError("Se guardó el sistema pero el análisis falló. Podés reintentar desde la card.");
       setBusy(false);
+    }
+  };
+
+  const verifyBackupConnection = async () => {
+    if (!initial) {
+      setBackupCheckMessage("Guardá el sistema primero y despues verificá la conexion.");
+      return;
+    }
+    setBackupChecking(true);
+    setBackupCheckMessage("");
+    try {
+      await saveSystem(initial.id, buildInput());
+      const health = await checkBackupNow(initial.id);
+      console.info("checkBackupNow result", { systemId: initial.id, health });
+      const details = [
+        backupHealthMessage(health),
+        `estado: ${health.status}`,
+        `conexion: ${health.connectionStatus}`,
+        health.scheduleType ? `frecuencia: ${health.scheduleType}` : null,
+        health.latestBackupState ? `ultimo backup: ${health.latestBackupState}` : null,
+        health.checkedAt ? `verificado: ${new Date(health.checkedAt).toLocaleString()}` : null,
+      ].filter(Boolean);
+      setBackupCheckMessage(details.join(" - "));
+    } catch (err) {
+      console.error("checkBackupNow failed", { systemId: initial.id, error: err });
+      setBackupCheckMessage(backupErrorMessage(err));
+    } finally {
+      setBackupChecking(false);
     }
   };
 
@@ -534,6 +580,38 @@ export default function SystemFormModal({ initial, onClose }: Props) {
               <Field label="Docs / carpeta (opcional)">
                 <input value={f.docs} onChange={(e) => set("docs", e.target.value)} placeholder="Enlace o ruta local" />
               </Field>
+            </div>
+
+            <div className="form-section">Backup de Google Cloud</div>
+            <div className="form-grid">
+              <Field label="Proveedor de backup">
+                <select value={f.backupProvider} onChange={(e) => set("backupProvider", e.target.value as BackupProvider)}>
+                  <option value="none">No configurado</option>
+                  <option value="firestore">Cloud Firestore</option>
+                </select>
+              </Field>
+              <Field label="Frecuencia esperada">
+                <select value={f.backupExpectedFrequency} onChange={(e) => set("backupExpectedFrequency", e.target.value as BackupExpectedFrequency)} disabled={f.backupProvider !== "firestore"}>
+                  <option value="auto">Detectar automaticamente</option>
+                  <option value="daily">Diaria</option>
+                  <option value="weekly">Semanal</option>
+                </select>
+              </Field>
+              <Field label="ID del proyecto Google Cloud">
+                <input value={f.backupProjectId} onChange={(e) => set("backupProjectId", e.target.value)} placeholder="lucca-park-project-id" disabled={f.backupProvider !== "firestore"} />
+              </Field>
+              <Field label="ID de la base de datos Firestore">
+                <input value={f.backupDatabaseId} onChange={(e) => set("backupDatabaseId", e.target.value)} placeholder="(default)" disabled={f.backupProvider !== "firestore"} />
+              </Field>
+              <div className="backup-verify span2">
+                <button type="button" className="btn btn-ghost" onClick={verifyBackupConnection} disabled={backupChecking || f.backupProvider !== "firestore"}>
+                  {backupChecking ? "Verificando backup..." : "Verificar conexion"}
+                </button>
+                <div className="backup-verify-meta">
+                  <span>Ultima verificacion: {initial?.backupHealth?.checkedAt ? new Date(initial.backupHealth.checkedAt).toLocaleString() : "Sin comprobar"}</span>
+                  <span>Resultado: {backupCheckMessage || initial?.backupHealth?.message || "Pendiente"}</span>
+                </div>
+              </div>
             </div>
 
             {/* 3. Cliente y facturación (solo si es de cliente) */}
