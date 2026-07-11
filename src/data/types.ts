@@ -53,6 +53,7 @@ export interface BackupConfig {
   databaseId?: string;
   expectedFrequency?: BackupExpectedFrequency;
   enabled?: boolean;
+  consoleUrl?: string;
 }
 
 export interface BackupHealth {
