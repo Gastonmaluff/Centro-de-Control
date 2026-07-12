@@ -158,9 +158,9 @@ export default function BackupDetailsModal({ system, onClose }: Props) {
           <div className="backup-brands">
             <span className="backup-brands-caption">Servicio de respaldo potenciado por</span>
             <div className="backup-brands-logos">
-              <img className="backup-brand-logo backup-brand-logo-firebase" src={firebaseLogo} alt="Firebase" loading="lazy" decoding="async" />
+              <img className="backup-brand-logo backup-brand-logo-firebase" src={firebaseLogo} alt="Firebase" decoding="async" />
               <span className="brand-divider" aria-hidden="true" />
-              <img className="backup-brand-logo backup-brand-logo-gcloud" src={googleCloudLogo} alt="Google Cloud" loading="lazy" decoding="async" />
+              <img className="backup-brand-logo backup-brand-logo-gcloud" src={googleCloudLogo} alt="Google Cloud" decoding="async" />
             </div>
           </div>
         </footer>
