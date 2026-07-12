@@ -13,6 +13,36 @@ const base = (p: P) => ({
   ...p,
 });
 
+type EcgTone = "success" | "warning" | "danger" | "neutral" | "monochrome";
+type EcgMarkProps = P & {
+  size?: number;
+  tone?: EcgTone;
+  animated?: boolean;
+};
+
+const ecgToneClass: Record<EcgTone, string> = {
+  success: "success",
+  warning: "warning",
+  danger: "danger",
+  neutral: "neutral",
+  monochrome: "monochrome",
+};
+
+export const EcgMark = ({ size = 24, tone = "monochrome", animated = false, className, ...p }: EcgMarkProps) => (
+  <svg
+    {...base({
+      ...p,
+      width: p.width ?? size,
+      height: p.height ?? size,
+      viewBox: "0 0 64 64",
+      strokeWidth: p.strokeWidth ?? 4,
+      className: `ecg-mark ${ecgToneClass[tone]} ${animated ? "is-animated" : ""} ${className ?? ""}`.trim(),
+    })}
+  >
+    <path className="ecg-mark-line" d="M6 36h16l5-10 7 24 8-36 7 22h9" />
+  </svg>
+);
+
 export const IcHome = (p: P) => (
   <svg {...base(p)}>
     <path d="M3 10.5 12 3l9 7.5" />
@@ -120,11 +150,6 @@ export const IcSun = (p: P) => (
 export const IcMoon = (p: P) => (
   <svg {...base(p)}>
     <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5" />
-  </svg>
-);
-export const IcBolt = (p: P) => (
-  <svg {...base(p)}>
-    <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
   </svg>
 );
 export const IcRocket = (p: P) => (

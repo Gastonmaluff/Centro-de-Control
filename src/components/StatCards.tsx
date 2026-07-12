@@ -1,15 +1,15 @@
 import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus } from "../lib/status";
 import type { System } from "../data/types";
-import { IcAlert, IcCheck, IcRefresh, IcServer, IcTasks } from "./icons";
+import { EcgMark, IcTasks } from "./icons";
 
-type Tone = "brand" | "ok" | "warn" | "down" | "muted";
-const toneStyle: Record<Tone, { bg: string; fg: string }> = {
-  brand: { bg: "var(--brand-weak)", fg: "var(--brand-text)" },
-  ok: { bg: "var(--ok-weak)", fg: "var(--ok)" },
-  warn: { bg: "var(--warn-weak)", fg: "var(--warn)" },
-  down: { bg: "var(--down-weak)", fg: "var(--down)" },
-  muted: { bg: "var(--surface-hover)", fg: "var(--text-muted)" },
+type Tone = "neutral" | "ok" | "warn" | "down" | "muted";
+const toneStyle: Record<Tone, { fg: string }> = {
+  neutral: { fg: "var(--text-muted)" },
+  ok: { fg: "var(--ok)" },
+  warn: { fg: "var(--warn)" },
+  down: { fg: "var(--down)" },
+  muted: { fg: "var(--text-muted)" },
 };
 
 function countBy(systems: System[], fn: (s: System) => boolean) {
@@ -25,25 +25,28 @@ export default function StatCards() {
   const unknown = countBy(systems, (s) => computeStatus(s) === "unknown");
   const openTodos = systems.reduce((a, s) => a + (s.todoStats?.open ?? 0), 0);
 
-  const cards: { label: string; value: number; icon: typeof IcServer; tone: Tone }[] = [
-    { label: "Operativos", value: operational, icon: IcCheck, tone: "ok" },
-    { label: "Requieren atencion", value: warning, icon: IcAlert, tone: "warn" },
-    { label: "Caidos", value: down, icon: IcAlert, tone: "down" },
-    { label: "Monitoreo incompleto", value: unknown, icon: IcRefresh, tone: "muted" },
-    { label: "Pendientes abiertos", value: openTodos, icon: IcTasks, tone: "brand" },
+  const cards: { label: string; value: number; tone: Tone; icon: "ecg" | "tasks" }[] = [
+    { label: "Operativos", value: operational, tone: "ok", icon: "ecg" },
+    { label: "Requieren atencion", value: warning, tone: "warn", icon: "ecg" },
+    { label: "Caidos", value: down, tone: "down", icon: "ecg" },
+    { label: "Monitoreo incompleto", value: unknown, tone: "muted", icon: "ecg" },
+    { label: "Pendientes abiertos", value: openTodos, tone: "neutral", icon: "tasks" },
   ];
 
   return (
     <div className="stats">
       {cards.map((c) => {
-        const Icon = c.icon;
         const t = toneStyle[c.tone];
         return (
           <div className="stat" key={c.label}>
             <div className="stat-top">
               <span className="stat-label">{c.label}</span>
-              <span className="stat-ico" style={{ background: t.bg, color: t.fg }}>
-                <Icon width={16} height={16} />
+              <span className={`stat-ico ${c.tone}`} style={{ color: t.fg }}>
+                {c.icon === "ecg" ? (
+                  <EcgMark size={20} tone={c.tone === "ok" ? "success" : c.tone === "warn" ? "warning" : c.tone === "down" ? "danger" : "neutral"} animated={c.tone === "ok"} aria-hidden="true" />
+                ) : (
+                  <IcTasks width={16} height={16} />
+                )}
               </span>
             </div>
             <div className="stat-value" style={c.value > 0 && (c.tone === "down" || c.tone === "warn") ? { color: t.fg } : undefined}>

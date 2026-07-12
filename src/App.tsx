@@ -12,7 +12,7 @@ import DashboardSections from "./components/DashboardSections";
 import SystemFormModal from "./components/SystemFormModal";
 import TodosModal from "./components/TodosModal";
 import { CobrosView, ClientesView, ConfigView, PlaceholderView } from "./components/views";
-import { IcBolt, IcCosts, IcDocs, IcMonitor, IcSessions, IcTasks } from "./components/icons";
+import { EcgMark, IcCosts, IcDocs, IcMonitor, IcSessions, IcTasks } from "./components/icons";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -20,8 +20,9 @@ export default function App() {
   if (loading) {
     return (
       <div className="auth-wrap">
-        <div className="brand-logo" style={{ width: 48, height: 48 }}>
-          <IcBolt width={26} height={26} />
+        <div className="app-loader" role="status" aria-label="Cargando Centro de Control">
+          <EcgMark size={72} animated aria-hidden="true" />
+          <span>Cargando Centro de Control</span>
         </div>
       </div>
     );

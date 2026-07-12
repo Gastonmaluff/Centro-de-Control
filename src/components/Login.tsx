@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { IcBolt, IcMoon, IcSun } from "./icons";
+import { EcgMark, IcMoon, IcSun } from "./icons";
 
 const errorText: Record<string, string> = {
   "auth/invalid-email": "El correo no es válido.",
@@ -49,7 +49,7 @@ export default function Login() {
       <div className="auth-card">
         <div className="auth-brand">
           <div className="brand-logo">
-            <IcBolt width={20} height={20} />
+            <EcgMark size={22} aria-hidden="true" />
           </div>
           <div>
             <div className="brand-name" style={{ fontSize: 16 }}>

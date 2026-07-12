@@ -4,7 +4,7 @@ import { useNav, type View } from "../context/NavContext";
 import { useSystemsCtx } from "../context/SystemsContext";
 import {
   IcBilling,
-  IcBolt,
+  EcgMark,
   IcClients,
   IcCosts,
   IcDocs,
@@ -75,7 +75,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <aside className="sidebar drawer" aria-label="Menu principal">
         <div className="brand">
           <div className="brand-logo">
-            <IcBolt width={20} height={20} />
+            <EcgMark size={22} aria-hidden="true" />
           </div>
           <div>
             <div className="brand-name">Centro de Control</div>
