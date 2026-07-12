@@ -6,7 +6,7 @@
   "scope": "/Centro-de-Control/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "theme_color": "#111827",
   "icons": [
     {
       "src": "/Centro-de-Control/icon-192.png",
