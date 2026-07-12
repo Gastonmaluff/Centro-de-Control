@@ -1,18 +1,14 @@
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { useSystemsCtx } from "../context/SystemsContext";
-import { computeStatus } from "../lib/status";
 import { runMonitorAll } from "../lib/monitoring";
 import { IcBell, IcMenu, IcMoon, IcPlus, IcRefresh, IcSearch, IcSun } from "./icons";
+import headerLogo from "../../ChatGPT Image 12 jul 2026, 01_16_40 a.m.png";
 
 export default function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { theme, setTheme } = useTheme();
-  const { openAdd, systems } = useSystemsCtx();
+  const { openAdd } = useSystemsCtx();
   const [sweeping, setSweeping] = useState(false);
-
-  const operational = systems.filter((s) => computeStatus(s) === "operational").length;
-  const attention = systems.filter((s) => ["warning", "down"].includes(computeStatus(s))).length;
-  const openTodos = systems.reduce((a, s) => a + (s.todoStats?.open ?? 0), 0);
 
   const sweep = async () => {
     if (sweeping) return;
@@ -31,12 +27,9 @@ export default function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
       <button className="icon-btn menu-trigger" title="Abrir menu" aria-label="Abrir menu" onClick={onOpenMenu}>
         <IcMenu width={18} height={18} />
       </button>
-      <div className="header-titles">
-        <h1>Centro de Control</h1>
-        <div className="header-sub">
-          <b>{systems.length} sistemas</b> · <b>{operational} operativos</b> ·{" "}
-          <b>{attention} requieren atención</b> · <b>{openTodos} pendientes</b>
-        </div>
+
+      <div className="header-brand-lockup" aria-label="Centro de Control">
+        <img className="header-logo" src={headerLogo} alt="Centro de Control" width={2048} height={676} decoding="async" />
       </div>
 
       <div className="header-actions">
