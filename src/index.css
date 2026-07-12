@@ -3109,34 +3109,25 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 26px;
   flex-wrap: wrap;
 }
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.brand-mark {
+.backup-brand-logo {
   display: block;
+  max-width: min(220px, 42vw);
   width: auto;
+  object-fit: contain;
   flex: 0 0 auto;
 }
-.brand-mark-firebase {
-  height: 20px;
+.backup-brand-logo-firebase {
+  height: 30px;
 }
-.brand-mark-gcloud {
-  height: 19px;
-}
-.brand-name {
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  color: var(--text-muted);
+.backup-brand-logo-gcloud {
+  height: 28px;
 }
 .brand-divider {
   width: 1px;
-  height: 20px;
+  height: 28px;
   background: var(--border);
 }
 .form-section {
@@ -3282,7 +3273,16 @@ a {
   }
   .backup-brands-logos {
     flex-direction: column;
-    gap: 12px;
+    gap: 13px;
+  }
+  .backup-brand-logo {
+    max-width: min(220px, 70vw);
+  }
+  .backup-brand-logo-firebase {
+    height: 27px;
+  }
+  .backup-brand-logo-gcloud {
+    height: 25px;
   }
   .backup-brands-logos .brand-divider {
     width: 40px;
