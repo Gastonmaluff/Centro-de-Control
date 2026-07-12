@@ -1,0 +1,24 @@
+{
+  "name": "Centro de Control",
+  "short_name": "C. Control",
+  "description": "Panel Centro de Control",
+  "start_url": "/Centro-de-Control/",
+  "scope": "/Centro-de-Control/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/Centro-de-Control/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Centro-de-Control/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
