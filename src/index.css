@@ -409,9 +409,9 @@ a {
 }
 .header-logo {
   display: block;
-  width: clamp(230px, 22vw, 300px);
+  width: clamp(460px, 44vw, 600px);
   height: auto;
-  max-height: 52px;
+  max-height: 104px;
   object-fit: contain;
   object-position: left center;
   border-radius: 8px;
@@ -3601,8 +3601,8 @@ a {
     flex: 1 1 auto;
   }
   .header-logo {
-    width: clamp(170px, 44vw, 220px);
-    max-height: 44px;
+    width: clamp(260px, 58vw, 360px);
+    max-height: 88px;
   }
   .header-actions {
     width: 100%;
