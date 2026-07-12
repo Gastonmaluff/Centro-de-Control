@@ -410,9 +410,9 @@ a {
 .header-logo {
   display: block;
   box-sizing: content-box;
-  height: 44px;
+  height: 88px;
   width: auto;
-  max-width: 300px;
+  max-width: 600px;
   object-fit: contain;
   object-position: left center;
   /* Superficie clara y limpia: el logo es negro sobre blanco, asi es legible
@@ -3606,9 +3606,9 @@ a {
     flex: 1 1 auto;
   }
   .header-logo {
-    height: 34px;
+    height: 68px;
     width: auto;
-    max-width: 210px;
+    max-width: min(420px, calc(100vw - 24px));
     padding: 3px 8px;
   }
   .header-actions {
