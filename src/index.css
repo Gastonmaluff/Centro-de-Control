@@ -409,11 +409,16 @@ a {
 }
 .header-logo {
   display: block;
-  width: clamp(460px, 44vw, 600px);
-  height: auto;
-  max-height: 104px;
+  box-sizing: content-box;
+  height: 44px;
+  width: auto;
+  max-width: 300px;
   object-fit: contain;
   object-position: left center;
+  /* Superficie clara y limpia: el logo es negro sobre blanco, asi es legible
+     tambien en modo oscuro sin aplicar filtros que degraden el color. */
+  background: #ffffff;
+  padding: 4px 10px;
   border-radius: 8px;
 }
 
@@ -3601,8 +3606,10 @@ a {
     flex: 1 1 auto;
   }
   .header-logo {
-    width: clamp(260px, 58vw, 360px);
-    max-height: 88px;
+    height: 34px;
+    width: auto;
+    max-width: 210px;
+    padding: 3px 8px;
   }
   .header-actions {
     width: 100%;
