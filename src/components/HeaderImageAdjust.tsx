@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import type { ComputedStatus, HeaderContentAlignment } from "../data/types";
 import {
   clampContentWidth,
@@ -213,7 +214,7 @@ export default function HeaderImageAdjust({
     "--acc2": secondary,
   } as CSSProperties;
 
-  return (
+  const modal = (
     <div className="modal-overlay hia-overlay" onMouseDown={onCancel}>
       <div className="modal hia-modal hia-pro" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head hia-head">
@@ -363,4 +364,6 @@ export default function HeaderImageAdjust({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

@@ -4097,3 +4097,7 @@ a {
     padding: 6px 11px;
   }
 }
+
+.modal-overlay.hia-overlay {
+  z-index: 3000;
+}
