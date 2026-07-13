@@ -4,7 +4,7 @@ import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus, projectStatusInfo, statusInfo } from "../lib/status";
 import { componentStateInfo, getTechnicalComponents } from "../lib/technical";
 import { dateTime, hrefs, money } from "../lib/format";
-import { headerAdjustFrom, headerImageStyle } from "../lib/headerImage";
+import { headerAdjustFrom, headerContentFrom, headerContentStyle, headerContentColor, headerImageStyle, sampleHeaderTextColor } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
 import { backupErrorMessage, backupHealthMessage, checkBackupNow, runMonitorSystem } from "../lib/monitoring";
@@ -62,7 +62,23 @@ export default function SystemCard({ sys }: { sys: System }) {
   const serviceChecks = (["authentication", "database", "functions", "storage"] as ComponentKey[]).map((key) => components.find((c) => c.key === key) ?? serviceFallback(key));
   const showHeaderImage = Boolean(sys.headerImageUrl && sys.headerImageEnabled !== false);
   const headerIncludesLogo = showHeaderImage && sys.headerImageIncludesLogo === true;
+  const headerContent = headerContentFrom(sys);
+  const [autoHeaderColor, setAutoHeaderColor] = useState("#111827");
   const backupUrl = googleCloudBackupUrl(sys.backupConfig);
+
+  useEffect(() => {
+    if (!showHeaderImage || headerContent.colorMode !== "auto" || !sys.headerImageUrl) {
+      setAutoHeaderColor("#111827");
+      return;
+    }
+    let alive = true;
+    void sampleHeaderTextColor(sys.headerImageUrl, headerContent.positionX, headerContent.positionY).then((color) => {
+      if (alive) setAutoHeaderColor(color);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [showHeaderImage, sys.headerImageUrl, headerContent.colorMode, headerContent.positionX, headerContent.positionY]);
 
   const handleDelete = async () => {
     setMenu(false);
@@ -118,13 +134,16 @@ export default function SystemCard({ sys }: { sys: System }) {
           />
         )}
         <div className="sys-hero-wash" />
-        <div className="sys-hero-content">
+        <div
+          className={`sys-hero-content align-${headerContent.alignment} contrast-${headerContent.contrastMode}`}
+          style={headerContentStyle(headerContent, autoHeaderColor)}
+        >
           {!headerIncludesLogo && <div className="sys-glyph" aria-hidden="true">{sys.glyph}</div>}
           <div className="sys-title">
             <div className="sys-name">{sys.name}</div>
             <div className="sys-tag">{sys.description || projectStatusInfo[sys.projectStatus]}</div>
             <div className="sys-live-status">
-              <LiveMonitorIndicator status={status} seed={`${sys.id}:${sys.name}`} label={si.label} />
+              <LiveMonitorIndicator status={status} seed={`${sys.id}:${sys.name}`} label={si.label} color={headerContentColor(headerContent, autoHeaderColor)} />
               <span className={`status-chip ${si.tone}`}>
                 <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
                 {si.label}

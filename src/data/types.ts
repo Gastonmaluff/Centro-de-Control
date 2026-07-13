@@ -103,6 +103,20 @@ export interface SystemLinks {
   docs?: string; // carpeta local o documentación
 }
 
+export type HeaderContentAlignment = "left" | "center" | "right";
+export type HeaderContentColorMode = "auto" | "black" | "white" | "custom";
+export type HeaderContentContrastMode = "none" | "shadow" | "light-panel" | "dark-panel";
+
+export interface HeaderContentConfig {
+  positionX?: number; // 0..100, centro del bloque
+  positionY?: number; // 0..100, centro del bloque
+  alignment?: HeaderContentAlignment;
+  colorMode?: HeaderContentColorMode;
+  customColor?: string | null;
+  contrastMode?: HeaderContentContrastMode;
+  maxWidth?: number; // porcentaje del ancho de cabecera
+}
+
 export interface ClientInfo {
   name?: string;
   contact?: string;
@@ -173,6 +187,8 @@ export interface System {
   headerImageZoom?: number; // >= 1 (1 = sin acercar)
   headerImageOffsetX?: number; // object-position X en % (0..100, 50 = centro)
   headerImageOffsetY?: number; // object-position Y en % (0..100, 50 = centro)
+  /** Ajuste independiente del contenido superpuesto sobre la cabecera. */
+  headerContentConfig?: HeaderContentConfig;
   createdApprox?: string;
   links: SystemLinks;
   client?: ClientInfo;

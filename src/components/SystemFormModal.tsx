@@ -6,7 +6,8 @@ import { useSystemsCtx } from "../context/SystemsContext";
 import { fetchLastCommit } from "../lib/github";
 import { backupErrorMessage, backupHealthMessage, checkBackupNow, checkUrl } from "../lib/monitoring";
 import { deleteSystemHeader, uploadSystemHeader } from "../firebase/storage";
-import { headerAdjustFrom, headerImageStyle, type HeaderAdjust } from "../lib/headerImage";
+import { computeStatus, statusInfo } from "../lib/status";
+import { headerAdjustFrom, headerContentFrom, headerContentToFirestore, headerImageStyle, type HeaderAdjust, type HeaderContentAdjust } from "../lib/headerImage";
 import HeaderImageAdjust from "./HeaderImageAdjust";
 import { IcCheck, IcCrop, IcImage, IcPlus, IcTrash, IcUpload } from "./icons";
 import type { BackupExpectedFrequency, BackupProvider } from "../data/types";
@@ -131,6 +132,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
   const [backupCheckMessage, setBackupCheckMessage] = useState("");
   const [dragging, setDragging] = useState(false);
   const [headerAdjust, setHeaderAdjust] = useState<HeaderAdjust>(() => headerAdjustFrom(initial ?? {}));
+  const [headerContent, setHeaderContent] = useState<HeaderContentAdjust>(() => headerContentFrom(initial ?? {}));
   const [adjustOpen, setAdjustOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -180,6 +182,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
       headerImageZoom: headerAdjust.zoom,
       headerImageOffsetX: headerAdjust.offsetX,
       headerImageOffsetY: headerAdjust.offsetY,
+      headerContentConfig: headerContentToFirestore(headerContent),
       links,
       backupConfig: {
         provider: f.backupProvider,
@@ -226,6 +229,7 @@ export default function SystemFormModal({ initial, onClose }: Props) {
     setHeaderRemoved(false);
     set("headerImageEnabled", true);
     setHeaderAdjust({ zoom: 1, offsetX: 50, offsetY: 50 });
+    setHeaderContent((c) => ({ ...c, positionX: 50, positionY: 50 }));
     setError("");
 
     const weight = `${Math.round(file.size / 1024)} KB`;
@@ -378,6 +382,8 @@ export default function SystemFormModal({ initial, onClose }: Props) {
   };
 
   const isClient = f.type === "client";
+  const previewStatus = initial ? computeStatus(initial) : "operational";
+  const previewStatusInfo = statusInfo[previewStatus];
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
@@ -666,10 +672,16 @@ export default function SystemFormModal({ initial, onClose }: Props) {
             secondary={f.accent2}
             glyph={f.glyph}
             name={f.name}
+            description={f.description}
             includesLogo={f.headerImageIncludesLogo}
+            status={previewStatus}
+            statusLabel={previewStatusInfo.label}
+            statusTone={previewStatusInfo.tone}
             value={headerAdjust}
-            onSave={(a) => {
+            contentValue={headerContent}
+            onSave={(a, c) => {
               setHeaderAdjust(a);
+              setHeaderContent(c);
               setAdjustOpen(false);
             }}
             onCancel={() => setAdjustOpen(false)}

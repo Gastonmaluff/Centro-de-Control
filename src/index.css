@@ -1095,15 +1095,47 @@ a {
     color-mix(in srgb, var(--acc2) 8%, transparent) 100%);
 }
 .sys-hero-content {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  width: min(58%, 620px);
-  height: 100%;
-  padding: 18px 18px 17px;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  min-width: min(220px, calc(100% - 28px));
+  padding: 10px 12px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
+  color: var(--text);
+  border-radius: 10px;
+}
+.sys-hero-content.align-center {
+  grid-template-columns: minmax(0, 1fr);
+}
+.sys-hero-content.align-right {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.sys-hero-content.align-center .sys-glyph,
+.sys-hero-content.align-right .sys-glyph {
+  display: none;
+}
+.sys-hero-content.align-center .sys-live-status {
+  justify-content: center;
+}
+.sys-hero-content.align-right .sys-live-status {
+  justify-content: flex-end;
+}
+.sys-hero-content.contrast-shadow {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.34);
+}
+.sys-hero-content.contrast-light-panel {
+  background: rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+.sys-hero-content.contrast-dark-panel {
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
 }
 .sys-hero .sys-glyph {
   width: 48px;
@@ -1115,10 +1147,14 @@ a {
 .sys-hero .sys-name {
   font-size: 17px;
   letter-spacing: 0;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
 }
 .sys-hero .sys-tag {
   margin-top: 3px;
-  color: color-mix(in srgb, var(--text-muted) 88%, var(--acc));
+  color: currentColor;
+  opacity: 0.78;
+  overflow-wrap: anywhere;
 }
 .sys-live-status {
   display: flex;
@@ -1133,6 +1169,7 @@ a {
   white-space: nowrap;
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   backdrop-filter: blur(8px);
+  text-shadow: none;
 }
 .sys-hero.includes-logo .sys-hero-wash {
   background: linear-gradient(90deg,
@@ -1142,20 +1179,15 @@ a {
     color-mix(in srgb, var(--surface) 82%, transparent) 100%);
 }
 .sys-hero.includes-logo .sys-hero-content {
-  width: 100%;
-  padding-right: 132px;
-  grid-template-columns: minmax(280px, 28%) minmax(0, 1fr) auto;
-}
-.sys-hero.includes-logo .sys-title {
-  grid-column: 2;
+  min-width: min(260px, calc(100% - 28px));
 }
 .sys-hero.includes-logo .sys-name {
-  color: #172033;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
+  color: inherit;
+  text-shadow: inherit;
 }
 .sys-hero.includes-logo .sys-tag {
-  color: #596377;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
+  color: currentColor;
+  text-shadow: inherit;
 }
 .sys-detail-btn {
   position: absolute;
@@ -1517,12 +1549,11 @@ a {
     min-height: 110px;
   }
   .sys-hero-content {
-    width: 68%;
-    padding: 14px 16px;
+    min-width: min(220px, calc(100% - 24px));
+    padding: 9px 11px;
   }
   .sys-hero.includes-logo .sys-hero-content {
-    padding-right: 58px;
-    grid-template-columns: minmax(210px, 30%) minmax(0, 1fr) auto;
+    min-width: min(250px, calc(100% - 24px));
   }
   .syscard-body {
     grid-template-columns: 1fr;
@@ -1545,8 +1576,8 @@ a {
     background: linear-gradient(90deg, color-mix(in srgb, var(--surface) 96%, var(--acc)) 0%, color-mix(in srgb, var(--surface) 90%, var(--acc)) 55%, color-mix(in srgb, var(--surface) 40%, transparent) 100%);
   }
   .sys-hero-content {
-    width: 78%;
-    padding: 10px 11px;
+    min-width: min(190px, calc(100% - 20px));
+    padding: 8px 9px;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 9px;
   }
@@ -1572,9 +1603,7 @@ a {
     margin-top: 0;
   }
   .sys-hero .status-chip {
-    grid-column: 2;
     justify-self: start;
-    margin-top: -4px;
   }
   .sys-hero.includes-logo .sys-hero-wash {
     background: linear-gradient(90deg,
@@ -1584,28 +1613,18 @@ a {
       color-mix(in srgb, var(--surface) 88%, transparent) 100%);
   }
   .sys-hero.includes-logo .sys-hero-content {
-    width: 100%;
-    padding: 12px 48px 12px 8px;
-    grid-template-columns: minmax(126px, 36%) minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: 8px;
-    row-gap: 6px;
-  }
-  .sys-hero.includes-logo .sys-title {
-    grid-column: 2;
-    align-self: end;
+    min-width: min(205px, calc(100% - 20px));
   }
   .sys-hero.includes-logo .sys-name {
-    font-size: clamp(18px, 5.5vw, 22px);
+    font-size: 16px;
     line-height: 1.05;
   }
   .sys-hero.includes-logo .sys-tag {
-    font-size: clamp(13px, 3.6vw, 15px);
+    font-size: 12px;
     line-height: 1.2;
     white-space: normal;
   }
   .sys-hero.includes-logo .status-chip {
-    grid-column: 2;
     justify-self: start;
     align-self: start;
     margin-top: 0;
@@ -1699,7 +1718,7 @@ a {
   z-index: 3000;
 }
 .hia-modal {
-  max-width: 640px;
+  max-width: 760px;
 }
 /* El marco reutiliza .sys-hero (misma proporción, degradado y texto que la card).
    Anulamos su altura fija para respetar la relación de aspecto medida en vivo. */
@@ -1717,9 +1736,28 @@ a {
 .hia-frame.sys-hero:active {
   cursor: grabbing;
 }
-/* Todo el marco es arrastrable: los hijos no capturan el puntero. */
-.hia-frame > * {
+.hia-frame.hia-mobile {
+  max-width: 390px;
+  margin-inline: auto;
+}
+.hia-frame.hia-image > * {
   pointer-events: none;
+}
+.hia-frame.hia-content {
+  cursor: default;
+}
+.hia-frame.hia-content .sys-hero-content {
+  pointer-events: auto;
+  cursor: grab;
+  outline: 1px dashed color-mix(in srgb, var(--brand) 68%, white);
+  outline-offset: 3px;
+}
+.hia-frame.hia-content .sys-hero-content.is-dragging,
+.hia-frame.hia-content .sys-hero-content:active {
+  cursor: grabbing;
+}
+.hia-frame.hia-content .sys-hero-content:focus-visible {
+  outline: 2px solid var(--brand);
 }
 .hia-hint {
   position: absolute;
@@ -1736,6 +1774,35 @@ a {
   backdrop-filter: blur(4px);
 }
 
+.hia-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 86%, var(--bg));
+}
+.segmented button {
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.segmented button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.08);
+}
 .hia-controls {
   display: flex;
   flex-direction: column;
@@ -1773,6 +1840,49 @@ a {
 .hia-sliders input[type="range"] {
   width: 100%;
 }
+.hia-presets,
+.hia-nudges {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.hia-nudges {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.hia-presets button,
+.hia-nudges button {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.hia-presets button:hover,
+.hia-nudges button:hover {
+  border-color: color-mix(in srgb, var(--brand) 42%, var(--border));
+}
+.hia-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.hia-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.hia-form-grid .span2 {
+  grid-column: 1 / -1;
+}
+.hia-form-grid select,
+.hia-form-grid input[type="color"] {
+  width: 100%;
+}
 
 .hia-foot {
   justify-content: space-between;
@@ -1784,8 +1894,23 @@ a {
 }
 
 @media (max-width: 560px) {
+  .hia-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .segmented {
+    width: 100%;
+  }
+  .segmented button {
+    flex: 1;
+  }
   .hia-sliders {
     grid-template-columns: 1fr;
+  }
+  .hia-presets,
+  .hia-nudges,
+  .hia-form-grid {
+    grid-template-columns: 1fr 1fr;
   }
   .hia-foot {
     flex-direction: column-reverse;
