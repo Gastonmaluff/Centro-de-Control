@@ -1,20 +1,19 @@
 import type { CSSProperties } from "react";
 import type {
+  ComputedStatus,
   HeaderContentAlignment,
   HeaderContentColorMode,
   HeaderContentConfig,
   HeaderContentContrastMode,
+  HeaderContentMode,
+  HeaderContentViewportConfig,
   System,
 } from "../data/types";
 
-/**
- * Ajuste visual (no destructivo) de la imagen de cabecera de la card.
- * Se guarda solo como parámetros; la imagen fuente nunca se recorta.
- */
 export interface HeaderAdjust {
-  zoom: number; // >= 1
-  offsetX: number; // 0..100 (object-position X, 50 = centro)
-  offsetY: number; // 0..100 (object-position Y, 50 = centro)
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
 }
 
 export const ZOOM_MIN = 1;
@@ -26,24 +25,26 @@ export const clampZoom = (z: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)
 export const clampOffset = (v: number) => Math.min(100, Math.max(0, v));
 export const clampContentWidth = (v: number) => Math.min(CONTENT_WIDTH_MAX, Math.max(CONTENT_WIDTH_MIN, v));
 
+export type HeaderViewport = "desktop" | "mobile";
+export type HeaderContentLayout = Required<HeaderContentViewportConfig>;
+
 export interface HeaderContentAdjust {
-  positionX: number;
-  positionY: number;
-  alignment: HeaderContentAlignment;
-  colorMode: HeaderContentColorMode;
-  customColor: string | null;
+  mode: HeaderContentMode;
+  desktop: HeaderContentLayout;
+  mobile: HeaderContentLayout;
+  mobileInheritsDesktop: boolean;
+  textColorMode: HeaderContentColorMode;
+  customTextColor: string | null;
   contrastMode: HeaderContentContrastMode;
-  maxWidth: number;
 }
 
 function positionToPercent(position?: "left" | "center" | "right", includesLogo?: boolean): number {
-  if (includesLogo) return 0; // el logo suele estar a la izquierda
+  if (includesLogo) return 0;
   if (position === "left") return 0;
   if (position === "center") return 50;
-  return 100; // "right" (default histórico)
+  return 100;
 }
 
-/** Deriva el ajuste actual de un sistema, con defaults sensatos hacia atrás. */
 export function headerAdjustFrom(sys: Partial<System>): HeaderAdjust {
   return {
     zoom: clampZoom(sys.headerImageZoom ?? 1),
@@ -52,13 +53,6 @@ export function headerAdjustFrom(sys: Partial<System>): HeaderAdjust {
   };
 }
 
-/**
- * Estilo de la imagen dentro de la cabecera. Se aplica al mismo <img> con
- * `object-fit: cover`, tanto en la card como en el editor → WYSIWYG.
- * - object-position (%) mueve el recorte sin dejar huecos y es independiente
- *   del tamaño (funciona igual en escritorio y móvil).
- * - transform scale() con origen en el punto focal acerca sin deformar.
- */
 export function headerImageStyle(a: HeaderAdjust): CSSProperties {
   return {
     objectPosition: `${a.offsetX}% ${a.offsetY}%`,
@@ -79,48 +73,164 @@ function validContrastMode(v?: string): HeaderContentContrastMode {
   return v === "none" || v === "light-panel" || v === "dark-panel" ? v : "shadow";
 }
 
-/** Deriva la configuraciÃ³n del overlay con defaults compatibles con cards viejas. */
-export function headerContentFrom(sys: Partial<System>): HeaderContentAdjust {
-  const cfg = sys.headerContentConfig ?? {};
+function validMode(v?: string): HeaderContentMode {
+  return v === "custom" ? "custom" : "legacy";
+}
+
+function defaultLayout(includesLogo?: boolean): HeaderContentLayout {
   return {
-    positionX: clampOffset(cfg.positionX ?? 50),
-    positionY: clampOffset(cfg.positionY ?? 50),
-    alignment: validAlignment(cfg.alignment),
-    colorMode: validColorMode(cfg.colorMode),
-    customColor: cfg.customColor || null,
-    contrastMode: validContrastMode(cfg.contrastMode),
-    maxWidth: clampContentWidth(cfg.maxWidth ?? (sys.headerImageIncludesLogo ? 42 : 58)),
+    positionX: includesLogo ? 60 : 50,
+    positionY: 50,
+    alignment: "left",
+    maxWidth: includesLogo ? 42 : 58,
   };
 }
 
-export function headerContentToFirestore(a: HeaderContentAdjust): HeaderContentConfig {
+function normalizeLayout(value: HeaderContentViewportConfig | undefined, fallback: HeaderContentLayout): HeaderContentLayout {
   return {
-    positionX: clampOffset(Math.round(a.positionX)),
-    positionY: clampOffset(Math.round(a.positionY)),
-    alignment: validAlignment(a.alignment),
-    colorMode: validColorMode(a.colorMode),
-    customColor: a.colorMode === "custom" ? a.customColor || "#ffffff" : null,
+    positionX: clampOffset(value?.positionX ?? fallback.positionX),
+    positionY: clampOffset(value?.positionY ?? fallback.positionY),
+    alignment: validAlignment(value?.alignment ?? fallback.alignment),
+    maxWidth: clampContentWidth(value?.maxWidth ?? fallback.maxWidth),
+  };
+}
+
+function isGeneratedCenteredDefault(cfg: HeaderContentConfig, includesLogo?: boolean): boolean {
+  const expectedWidth = includesLogo ? 42 : 58;
+  return (
+    cfg.mode == null &&
+    cfg.desktop == null &&
+    cfg.mobile == null &&
+    cfg.positionX === 50 &&
+    cfg.positionY === 50 &&
+    (cfg.alignment == null || cfg.alignment === "left") &&
+    (cfg.colorMode == null || cfg.colorMode === "auto") &&
+    (cfg.textColorMode == null || cfg.textColorMode === "auto") &&
+    (cfg.customColor == null || cfg.customColor === "") &&
+    (cfg.customTextColor == null || cfg.customTextColor === "") &&
+    (cfg.contrastMode == null || cfg.contrastMode === "shadow") &&
+    (cfg.maxWidth == null || cfg.maxWidth === expectedWidth)
+  );
+}
+
+export function normalizeHeaderContentConfig(sys: Partial<System>): HeaderContentAdjust {
+  const cfg = sys.headerContentConfig;
+  const fallback = defaultLayout(sys.headerImageIncludesLogo);
+
+  if (!cfg || isGeneratedCenteredDefault(cfg, sys.headerImageIncludesLogo)) {
+    return {
+      mode: "legacy",
+      desktop: fallback,
+      mobile: fallback,
+      mobileInheritsDesktop: true,
+      textColorMode: "auto",
+      customTextColor: null,
+      contrastMode: "shadow",
+    };
+  }
+
+  const flatLayout = {
+    positionX: cfg.positionX,
+    positionY: cfg.positionY,
+    alignment: cfg.alignment,
+    maxWidth: cfg.maxWidth,
+  };
+  const desktop = normalizeLayout(cfg.desktop ?? flatLayout, fallback);
+  const mobileInheritsDesktop = cfg.mobile?.inheritDesktop !== false;
+  const mobile = mobileInheritsDesktop ? desktop : normalizeLayout(cfg.mobile, desktop);
+
+  return {
+    mode: validMode(cfg.mode ?? "custom"),
+    desktop,
+    mobile,
+    mobileInheritsDesktop,
+    textColorMode: validColorMode(cfg.textColorMode ?? cfg.colorMode),
+    customTextColor: cfg.customTextColor || cfg.customColor || null,
+    contrastMode: validContrastMode(cfg.contrastMode),
+  };
+}
+
+export const headerContentFrom = normalizeHeaderContentConfig;
+
+export function headerContentToFirestore(a: HeaderContentAdjust): HeaderContentConfig {
+  if (a.mode === "legacy") return { mode: "legacy" };
+
+  return {
+    mode: "custom",
+    desktop: {
+      positionX: clampOffset(Math.round(a.desktop.positionX)),
+      positionY: clampOffset(Math.round(a.desktop.positionY)),
+      alignment: validAlignment(a.desktop.alignment),
+      maxWidth: clampContentWidth(Math.round(a.desktop.maxWidth)),
+    },
+    mobile: {
+      inheritDesktop: a.mobileInheritsDesktop,
+      positionX: clampOffset(Math.round(a.mobile.positionX)),
+      positionY: clampOffset(Math.round(a.mobile.positionY)),
+      alignment: validAlignment(a.mobile.alignment),
+      maxWidth: clampContentWidth(Math.round(a.mobile.maxWidth)),
+    },
+    textColorMode: validColorMode(a.textColorMode),
+    customTextColor: a.textColorMode === "custom" ? a.customTextColor || "#ffffff" : null,
     contrastMode: validContrastMode(a.contrastMode),
-    maxWidth: clampContentWidth(Math.round(a.maxWidth)),
   };
 }
 
 export function headerContentColor(a: HeaderContentAdjust, autoColor?: string): string {
-  if (a.colorMode === "black") return "#111827";
-  if (a.colorMode === "white") return "#f8fafc";
-  if (a.colorMode === "custom") return a.customColor || "#ffffff";
+  if (a.textColorMode === "black") return "#111827";
+  if (a.textColorMode === "white") return "#f8fafc";
+  if (a.textColorMode === "custom") return a.customTextColor || "#ffffff";
   return autoColor || "#111827";
 }
 
-export function headerContentStyle(a: HeaderContentAdjust, autoColor?: string): CSSProperties {
+export function headerContentLayout(a: HeaderContentAdjust, viewport: HeaderViewport): HeaderContentLayout {
+  return viewport === "mobile" ? a.mobile : a.desktop;
+}
+
+export function headerContentStyle(a: HeaderContentAdjust, viewport: HeaderViewport, autoColor?: string): CSSProperties {
+  const layout = headerContentLayout(a, viewport);
   return {
-    left: `${a.positionX}%`,
-    top: `${a.positionY}%`,
-    maxWidth: `${a.maxWidth}%`,
+    left: `${layout.positionX}%`,
+    top: `${layout.positionY}%`,
+    maxWidth: `${layout.maxWidth}%`,
     color: headerContentColor(a, autoColor),
-    textAlign: a.alignment,
-    justifyItems: a.alignment === "center" ? "center" : a.alignment === "right" ? "end" : "start",
+    textAlign: layout.alignment,
+    justifyItems: layout.alignment === "center" ? "center" : layout.alignment === "right" ? "end" : "start",
   };
+}
+
+export function withHeaderContentLayout(
+  a: HeaderContentAdjust,
+  viewport: HeaderViewport,
+  patch: Partial<HeaderContentLayout>
+): HeaderContentAdjust {
+  const current = headerContentLayout(a, viewport);
+  const next = normalizeLayout({ ...current, ...patch }, current);
+  if (viewport === "desktop") {
+    return {
+      ...a,
+      mode: "custom",
+      desktop: next,
+      mobile: a.mobileInheritsDesktop ? next : a.mobile,
+    };
+  }
+  return { ...a, mode: "custom", mobile: next, mobileInheritsDesktop: false };
+}
+
+export function statusEcgColor(status: ComputedStatus): string {
+  switch (status) {
+    case "operational":
+      return "#22c55e";
+    case "warning":
+      return "#f59e0b";
+    case "down":
+      return "#ef4444";
+    case "unknown":
+      return "#64748b";
+    case "archived":
+    default:
+      return "#94a3b8";
+  }
 }
 
 export async function sampleHeaderTextColor(imageUrl: string, x: number, y: number): Promise<"#111827" | "#f8fafc"> {

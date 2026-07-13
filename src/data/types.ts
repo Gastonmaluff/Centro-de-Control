@@ -106,8 +106,21 @@ export interface SystemLinks {
 export type HeaderContentAlignment = "left" | "center" | "right";
 export type HeaderContentColorMode = "auto" | "black" | "white" | "custom";
 export type HeaderContentContrastMode = "none" | "shadow" | "light-panel" | "dark-panel";
+export type HeaderContentMode = "legacy" | "custom";
+
+export interface HeaderContentViewportConfig {
+  positionX?: number; // 0..100, centro del bloque
+  positionY?: number; // 0..100, centro del bloque
+  alignment?: HeaderContentAlignment;
+  maxWidth?: number; // porcentaje del ancho de cabecera
+}
 
 export interface HeaderContentConfig {
+  mode?: HeaderContentMode;
+  desktop?: HeaderContentViewportConfig;
+  mobile?: HeaderContentViewportConfig & { inheritDesktop?: boolean };
+  textColorMode?: HeaderContentColorMode;
+  customTextColor?: string | null;
   positionX?: number; // 0..100, centro del bloque
   positionY?: number; // 0..100, centro del bloque
   alignment?: HeaderContentAlignment;

@@ -4,16 +4,15 @@ import { useSystemsCtx } from "../context/SystemsContext";
 import { computeStatus, projectStatusInfo, statusInfo } from "../lib/status";
 import { componentStateInfo, getTechnicalComponents } from "../lib/technical";
 import { dateTime, hrefs, money } from "../lib/format";
-import { headerAdjustFrom, headerContentFrom, headerContentStyle, headerContentColor, headerImageStyle, sampleHeaderTextColor } from "../lib/headerImage";
+import { headerAdjustFrom, headerContentFrom } from "../lib/headerImage";
 import { patchSystem } from "../firebase/systems";
 import { fetchLastCommit } from "../lib/github";
 import { backupErrorMessage, backupHealthMessage, checkBackupNow, runMonitorSystem } from "../lib/monitoring";
 import { googleCloudBackupUrl } from "../lib/backups";
 import BackupDetailsModal from "./BackupDetailsModal";
-import LiveMonitorIndicator from "./LiveMonitorIndicator";
+import SystemCardHeader from "./SystemCardHeader";
 import {
   IcCloud,
-  IcChevronDown,
   IcDatabase,
   IcDomain,
   IcEdit,
@@ -63,22 +62,7 @@ export default function SystemCard({ sys }: { sys: System }) {
   const showHeaderImage = Boolean(sys.headerImageUrl && sys.headerImageEnabled !== false);
   const headerIncludesLogo = showHeaderImage && sys.headerImageIncludesLogo === true;
   const headerContent = headerContentFrom(sys);
-  const [autoHeaderColor, setAutoHeaderColor] = useState("#111827");
   const backupUrl = googleCloudBackupUrl(sys.backupConfig);
-
-  useEffect(() => {
-    if (!showHeaderImage || headerContent.colorMode !== "auto" || !sys.headerImageUrl) {
-      setAutoHeaderColor("#111827");
-      return;
-    }
-    let alive = true;
-    void sampleHeaderTextColor(sys.headerImageUrl, headerContent.positionX, headerContent.positionY).then((color) => {
-      if (alive) setAutoHeaderColor(color);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [showHeaderImage, sys.headerImageUrl, headerContent.colorMode, headerContent.positionX, headerContent.positionY]);
 
   const handleDelete = async () => {
     setMenu(false);
@@ -124,37 +108,22 @@ export default function SystemCard({ sys }: { sys: System }) {
 
   return (
     <article className="syscard" style={style}>
-      <header className={`sys-hero ${headerIncludesLogo ? "includes-logo" : ""}`}>
-        {showHeaderImage && (
-          <img
-            className="sys-hero-image"
-            src={sys.headerImageUrl}
-            alt={sys.headerImageAlt || `${sys.name} - imagen de cabecera`}
-            style={headerImageStyle(headerAdjustFrom(sys))}
-          />
-        )}
-        <div className="sys-hero-wash" />
-        <div
-          className={`sys-hero-content align-${headerContent.alignment} contrast-${headerContent.contrastMode}`}
-          style={headerContentStyle(headerContent, autoHeaderColor)}
-        >
-          {!headerIncludesLogo && <div className="sys-glyph" aria-hidden="true">{sys.glyph}</div>}
-          <div className="sys-title">
-            <div className="sys-name">{sys.name}</div>
-            <div className="sys-tag">{sys.description || projectStatusInfo[sys.projectStatus]}</div>
-            <div className="sys-live-status">
-              <LiveMonitorIndicator status={status} seed={`${sys.id}:${sys.name}`} label={si.label} color={headerContentColor(headerContent, autoHeaderColor)} />
-              <span className={`status-chip ${si.tone}`}>
-                <span className={`led ${si.tone === "muted" ? "" : si.tone}`} />
-                {si.label}
-              </span>
-            </div>
-          </div>
-        </div>
-        <button className="sys-detail-btn" type="button" onClick={() => openEdit(sys)}>
-          Ver detalles <IcChevronDown width={15} height={15} />
-        </button>
-      </header>
+      <SystemCardHeader
+        imageUrl={showHeaderImage ? sys.headerImageUrl : undefined}
+        imageAlt={sys.headerImageAlt || `${sys.name} - imagen de cabecera`}
+        imageAdjust={headerAdjustFrom(sys)}
+        content={headerContent}
+        primary={primary}
+        secondary={secondary}
+        glyph={sys.glyph}
+        name={sys.name}
+        description={sys.description || projectStatusInfo[sys.projectStatus]}
+        includesLogo={headerIncludesLogo}
+        status={status}
+        statusLabel={si.label}
+        statusTone={si.tone}
+        onDetailClick={() => openEdit(sys)}
+      />
 
       <div className="syscard-body">
         <section className="sys-tech" aria-label="Estado tecnico">
