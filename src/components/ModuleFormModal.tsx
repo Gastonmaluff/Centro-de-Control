@@ -26,6 +26,7 @@ export default function ModuleFormModal({ initial, onClose }: { initial: Module 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState(initial?.imageUrl ?? "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function ModuleFormModal({ initial, onClose }: { initial: Module 
     e.preventDefault();
     if (!form.name.trim()) return;
     setSaving(true);
+    setError("");
     try {
       const data = {
         name: form.name.trim(),
@@ -56,6 +58,8 @@ export default function ModuleFormModal({ initial, onClose }: { initial: Module 
         await saveModule(id, { ...data, imageUrl });
       }
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar el módulo. Verificá la imagen e intentá de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -87,6 +91,7 @@ export default function ModuleFormModal({ initial, onClose }: { initial: Module 
             <label className="field span2"><span>Repositorio GitHub</span><input type="url" value={form.repositoryUrl} onChange={(e) => change("repositoryUrl", e.target.value)} placeholder="https://github.com/..." /></label>
             <label className="field span2"><span>Estado</span><select value={form.status} onChange={(e) => change("status", e.target.value)}><option value="ready">Listo para usar</option><option value="draft">En desarrollo</option></select></label>
           </div>
+          {error && <p role="alert" className="module-form-error">{error}</p>}
           <div className="modal-foot"><button type="button" className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={saving}>{saving ? "Guardando..." : "Guardar módulo"}</button></div>
         </form>
       </div>

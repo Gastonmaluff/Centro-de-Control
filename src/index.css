@@ -3921,6 +3921,7 @@ a {
 .module-form-grid .field input, .module-form-grid .field select, .module-form-grid .field textarea { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 9px 10px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; outline: 0; }
 .module-form-grid .field textarea { min-height: 104px; resize: vertical; }
 .module-form-grid .field .module-prompt-input { min-height: 138px; }
+.module-form-error { margin: 8px 0 0; padding: 9px 10px; border: 1px solid color-mix(in srgb, var(--down) 30%, var(--border)); border-radius: var(--r-sm); background: var(--down-weak); color: var(--down); font-size: 12px; line-height: 1.4; }
 .module-form-grid .field input:focus, .module-form-grid .field select:focus, .module-form-grid .field textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--focus-ring); }
 .module-form-grid .span2 { grid-column: span 2; }
 .module-image-picker { display: flex; align-items: center; gap: 14px; min-height: 116px; padding: 12px; border: 1px dashed var(--border-strong); border-radius: var(--r-md); background: var(--surface-2); }

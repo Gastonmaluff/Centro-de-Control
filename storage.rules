@@ -9,5 +9,16 @@ service firebase.storage {
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(png|webp)');
     }
+
+    match /module-images/{moduleId}/{fileName} {
+      allow read, delete: if request.auth != null;
+      allow create, update: if request.auth != null
+        && fileName == 'cover'
+        && request.resource.size < 5 * 1024 * 1024
+        && (request.resource.contentType == 'image/png'
+          || request.resource.contentType == 'image/jpeg'
+          || request.resource.contentType == 'image/webp'
+          || request.resource.contentType == 'image/svg+xml');
+    }
   }
 }
