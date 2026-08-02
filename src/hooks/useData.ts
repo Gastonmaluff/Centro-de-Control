@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { ActivityItem, Charge, System, Todo } from "../data/types";
+import type { ActivityItem, Charge, Module, System, Todo } from "../data/types";
 
 /**
  * Subscribes to a Firestore collection and returns its documents in real time.
@@ -39,6 +39,9 @@ export function useCharges() {
 }
 export function useActivity() {
   return useCollection<ActivityItem>("activity");
+}
+export function useModules() {
+  return useCollection<Module>("modules");
 }
 
 /** Pendientes de un sistema (subcolección systems/{id}/todos). */

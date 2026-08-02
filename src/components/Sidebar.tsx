@@ -11,6 +11,7 @@ import {
   IcHome,
   IcLogout,
   IcMonitor,
+  IcPackage,
   IcPlus,
   IcSessions,
   IcSettings,
@@ -37,6 +38,7 @@ const NAV: NavEntry[] = [
   { key: "costos", label: "Costos", icon: IcCosts },
   { key: "documentos", label: "Documentos", icon: IcDocs },
   { key: "config", label: "Configuracion", icon: IcSettings },
+  { key: "modulos", label: "Módulos", icon: IcPackage },
 ];
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -92,7 +94,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             <NavButton key={item.key} item={item} active={active} onClick={navigate} />
           ))}
           <div className="nav-label">Trabajo</div>
-          {nav.slice(5).map((item) => (
+          {nav.slice(5, -1).map((item) => (
+            <NavButton key={item.key} item={item} active={active} onClick={navigate} />
+          ))}
+          <div className="nav-label">Biblioteca</div>
+          {nav.slice(-1).map((item) => (
             <NavButton key={item.key} item={item} active={active} onClick={navigate} />
           ))}
         </nav>

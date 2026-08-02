@@ -10,7 +10,8 @@ export type View =
   | "sesiones"
   | "costos"
   | "documentos"
-  | "config";
+  | "config"
+  | "modulos";
 
 interface NavCtx {
   view: View;

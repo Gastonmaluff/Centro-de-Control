@@ -58,6 +58,9 @@ export const IcSystems = (p: P) => (
     <rect x="14" y="14" width="7" height="7" rx="1.5" />
   </svg>
 );
+export const IcPackage = (p: P) => (
+  <svg {...base(p)}><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" /><path d="m4 7.5 8 4.5 8-4.5M12 12v9" /></svg>
+);
 export const IcClients = (p: P) => (
   <svg {...base(p)}>
     <circle cx="9" cy="8" r="3.2" />

@@ -218,6 +218,23 @@ export interface System {
   lastWorkedAt?: string;
 }
 
+/** Pieza reutilizable que puede incorporarse a uno o varios proyectos. */
+export interface Module {
+  id: string;
+  name: string;
+  description?: string;
+  prompt?: string;
+  icon?: string;
+  imageUrl?: string;
+  repositoryUrl?: string;
+  stack?: string;
+  tags?: string[];
+  installNotes?: string;
+  status?: "ready" | "draft";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /* ------------------------------------------------------------- Pendientes */
 
 export type TodoKind = "task" | "bug" | "polish" | "idea";

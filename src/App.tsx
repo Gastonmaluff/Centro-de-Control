@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { NavProvider, useNav } from "./context/NavContext";
 import { SystemsProvider, useSystemsCtx } from "./context/SystemsContext";
+import { ModulesProvider, useModulesCtx } from "./context/ModulesContext";
 import Header from "./components/Header";
 import Login from "./components/Login";
 import DashboardPanels from "./components/RightPanel";
@@ -12,6 +13,8 @@ import DashboardSections from "./components/DashboardSections";
 import SystemFormModal from "./components/SystemFormModal";
 import TodosModal from "./components/TodosModal";
 import { CobrosView, ClientesView, ConfigView, PlaceholderView } from "./components/views";
+import ModulesSection from "./components/ModulesSection";
+import ModuleFormModal from "./components/ModuleFormModal";
 import { EcgMark, IcCosts, IcDocs, IcMonitor, IcSessions, IcTasks } from "./components/icons";
 
 export default function App() {
@@ -33,8 +36,10 @@ export default function App() {
   return (
     <NavProvider>
       <SystemsProvider>
+        <ModulesProvider>
         <Shell />
         <GlobalModals />
+        </ModulesProvider>
       </SystemsProvider>
     </NavProvider>
   );
@@ -118,6 +123,8 @@ function MainView() {
       );
     case "config":
       return <ConfigView />;
+    case "modulos":
+      return <ModulesSection />;
     default:
       return null;
   }
@@ -125,10 +132,12 @@ function MainView() {
 
 function GlobalModals() {
   const { modalOpen, editing, closeModal, todosFor, closeTodos } = useSystemsCtx();
+  const modules = useModulesCtx();
   return (
     <>
       {modalOpen && <SystemFormModal initial={editing} onClose={closeModal} />}
       {todosFor && <TodosModal system={todosFor} onClose={closeTodos} />}
+      {modules.modalOpen && <ModuleFormModal initial={modules.editing} onClose={modules.closeModal} />}
     </>
   );
 }
